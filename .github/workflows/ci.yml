@@ -67,7 +67,7 @@ jobs:
       run: dotnet build -c Release
 
     - name: Run All_Days_Benchmark
-      run: dotnet run -c Release --no-build --filter All_Days_Benchmark
+      run: dotnet run -c Release --no-build --filter *All_Days_Benchmark*
       working-directory: ./src/AoC_2022.Benchmarks
 
     - name: 'Upload ${{ matrix.os }} artifacts'
