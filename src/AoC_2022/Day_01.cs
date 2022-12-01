@@ -2,32 +2,28 @@
 
 public class Day_01 : BaseDay
 {
-    private readonly List<string> _input;
+    private readonly List<int> _input;
 
     public Day_01()
     {
-        _input = ParseInput();
+        _input = ParseInput()
+            .Select(strList => strList.Select(str => int.Parse(str)))
+            .Select(intList => intList.Sum())
+            .ToList();
     }
 
     public override ValueTask<string> Solve_1()
     {
-        var solution = string.Empty;
-
-        return new("jey");
+        return new($"{_input.Max()}");
     }
 
     public override ValueTask<string> Solve_2()
     {
-        var solution = string.Empty;
-
-        return new(solution);
+        return new($"{_input.OrderByDescending(n => n).Take(3).Sum()}");
     }
 
-    private List<string> ParseInput()
+    private List<List<string>> ParseInput()
     {
-        var file = new ParsedFile(InputFilePath);
-
-        return File.ReadAllLines(InputFilePath).ToList();
+        return ParsedFile.ReadAllGroupsOfLines(InputFilePath);
     }
 }
-
