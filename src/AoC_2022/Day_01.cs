@@ -6,13 +6,11 @@ public class Day_01 : BaseDay
 
     public Day_01()
     {
-        _input = ParsedFile
-            .ReadAllGroupsOfLines(InputFilePath)
-            .ConvertAll(strList => strList.Sum(str => int.Parse(str)))
-;
+        _input = ParsedFile.ReadAllGroupsOfLines<int>(InputFilePath)
+            .ConvertAll(group => group.Sum());
     }
 
     public override ValueTask<string> Solve_1() => new($"{_input.Max()}");
 
-    public override ValueTask<string> Solve_2() => new($"{_input.OrderByDescending(n => n).Take(3).Sum()}");
+    public override ValueTask<string> Solve_2() => new($"{_input.OrderDescending().Take(3).Sum()}");
 }
