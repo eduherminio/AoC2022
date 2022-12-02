@@ -15,36 +15,6 @@ public class Day_02 : BaseDay
 
     public override ValueTask<string> Solve_1()
     {
-        static int ShapeScore(Shape shape)
-        {
-            return shape switch
-            {
-                Shape.Rock => 1,
-                Shape.Paper => 2,
-                Shape.Scissors => 3,
-                _ => throw new()
-            };
-        }
-
-        static int MatchScore(Shape opponent, Shape me)
-        {
-            var players = new[] { me, opponent };
-
-            var winner = Math.Abs(opponent - me) switch
-            {
-                0 => -1,
-                1 => (int)players.Max(),
-                2 => (int)players.Min(),
-                _ => throw new Exception(@"¯\_(ツ)_/¯")
-            };
-
-            return winner == -1
-                ? 3
-                : (winner == (int)opponent)
-                    ? 0
-                    : 6;
-        }
-
         return new(_input
             .Sum(pair => ShapeScore(pair.Me) + MatchScore(pair.Opponent, pair.Me))
             .ToString());
@@ -52,8 +22,60 @@ public class Day_02 : BaseDay
 
     public override ValueTask<string> Solve_2()
     {
-        return new($"");
+        int result = 0;
+
+        foreach (var (Opponent, Me) in _input)
+        {
+            int me = (int)(Me switch
+            {
+                Shape.Rock => Opponent - 1,
+                Shape.Paper => Opponent,
+                Shape.Scissors => Opponent + 1,
+                _ => throw new()
+            });
+
+            Shape meShape = me switch
+            {
+                3 => Shape.Rock,
+                -1 => Shape.Scissors,
+                _ => (Shape)me
+            };
+
+            result += ShapeScore(meShape) + MatchScore(Opponent, meShape);
+        }
+        return new($"{result}");
     }
+
+    private static int ShapeScore(Shape shape)
+    {
+        return shape switch
+        {
+            Shape.Rock => 1,
+            Shape.Paper => 2,
+            Shape.Scissors => 3,
+            _ => throw new()
+        };
+    }
+
+    private static int MatchScore(Shape opponent, Shape me)
+    {
+        var players = new[] { me, opponent };
+
+        var winner = Math.Abs(opponent - me) switch
+        {
+            0 => -1,
+            1 => (int)players.Max(),
+            2 => (int)players.Min(),
+            _ => throw new Exception(@"¯\_(ツ)_/¯")
+        };
+
+        return winner == -1
+            ? 3
+            : (winner == (int)opponent)
+                ? 0
+                : 6;
+    }
+
 
     private IEnumerable<(Shape, Shape)> ParseInput()
     {

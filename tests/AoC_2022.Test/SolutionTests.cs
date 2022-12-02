@@ -7,6 +7,7 @@ namespace AoC_2022.Test;
 public static class SolutionTests
 {
     [TestCase(typeof(Day_01), "66186", "196804")]
+    [TestCase(typeof(Day_02), "14163", "12091")]
     public static async Task Test(Type type, string sol1, string sol2)
     {
         if (Activator.CreateInstance(type) is BaseProblem instance)
