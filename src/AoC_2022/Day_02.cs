@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace AoC_2022;
+﻿namespace AoC_2022;
 
 public class Day_02 : BaseDay
 {
@@ -22,28 +20,12 @@ public class Day_02 : BaseDay
 
     public override ValueTask<string> Solve_2()
     {
-        int result = 0;
-
-        foreach (var (Opponent, Me) in _input)
-        {
-            int me = (int)(Me switch
+        return new(_input
+            .Sum(pair =>
             {
-                Shape.Rock => Opponent - 1,
-                Shape.Paper => Opponent,
-                Shape.Scissors => Opponent + 1,
-                _ => throw new()
-            });
-
-            Shape meShape = me switch
-            {
-                3 => Shape.Rock,
-                -1 => Shape.Scissors,
-                _ => (Shape)me
-            };
-
-            result += ShapeScore(meShape) + MatchScore(Opponent, meShape);
-        }
-        return new($"{result}");
+                var me = PickShape(pair.Opponent, pair.Me);
+                return ShapeScore(me) + MatchScore(pair.Opponent, me);
+            }).ToString());
     }
 
     private static int ShapeScore(Shape shape)
@@ -66,16 +48,35 @@ public class Day_02 : BaseDay
             0 => -1,
             1 => (int)players.Max(),
             2 => (int)players.Min(),
-            _ => throw new Exception(@"¯\_(ツ)_/¯")
+            _ => throw new()
         };
 
+#pragma warning disable S3358 // Ternary operators should not be nested
         return winner == -1
             ? 3
             : (winner == (int)opponent)
                 ? 0
                 : 6;
+#pragma warning restore S3358 // Ternary operators should not be nested
     }
 
+    private static Shape PickShape(Shape opponent, Shape expectedResult)
+    {
+        int me = (int)(expectedResult switch
+        {
+            Shape.Rock => opponent - 1,
+            Shape.Paper => opponent,
+            Shape.Scissors => opponent + 1,
+            _ => throw new()
+        });
+
+        return me switch
+        {
+            3 => Shape.Rock,
+            -1 => Shape.Scissors,
+            _ => (Shape)me
+        };
+    }
 
     private IEnumerable<(Shape, Shape)> ParseInput()
     {
