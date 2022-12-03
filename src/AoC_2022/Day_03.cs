@@ -25,10 +25,7 @@ public class Day_03 : BaseDay
                 index++;
             }
 
-            var doubleElement = firstHalf[index];
-            result += char.IsUpper(doubleElement)
-                ? doubleElement - 'A' + 27
-                : doubleElement - 'a' + 1;
+            result += CalculatePriority(firstHalf[index]);
         }
 
         return new($"{result}");
@@ -55,13 +52,17 @@ public class Day_03 : BaseDay
                 index++;
             }
 
-            var doubleElement = first[index];
-            result += char.IsUpper(doubleElement)
-                ? doubleElement - 'A' + 27
-                : doubleElement - 'a' + 1;
+            result += CalculatePriority(first[index]);
         }
 
         return new($"{result}");
+    }
+
+    private static int CalculatePriority(char doubleElement)
+    {
+        return char.IsUpper(doubleElement)
+            ? doubleElement - 'A' + 27
+            : doubleElement - 'a' + 1;
     }
 
     private string[] ParseInput() => File.ReadAllLines(InputFilePath);
