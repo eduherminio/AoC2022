@@ -35,3 +35,5 @@ if (Test-Path $outputPath) {
 	Write-Host "Input of Day $day downloaded to $outputPath"
 	cat $outputPath
 }
+
+notepad++ $outputPath
