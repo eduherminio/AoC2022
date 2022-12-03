@@ -36,7 +36,32 @@ public class Day_03 : BaseDay
 
     public override ValueTask<string> Solve_2()
     {
-        return new("");
+        int result = 0;
+
+        for (int i = 0; i < _input.Length - 2; i += 3)
+        {
+            var first = _input[i].AsSpan();
+            var second = _input[i + 1].AsSpan();
+            var third = _input[i + 2].AsSpan();
+
+            int index = 0;
+            while (true)
+            {
+                var item = first[index];
+                if (second.Contains(item) && third.Contains(item))
+                {
+                    break;
+                }
+                index++;
+            }
+
+            var doubleElement = first[index];
+            result += char.IsUpper(doubleElement)
+                ? doubleElement - 'A' + 27
+                : doubleElement - 'a' + 1;
+        }
+
+        return new($"{result}");
     }
 
     private string[] ParseInput() => File.ReadAllLines(InputFilePath);
