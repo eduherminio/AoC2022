@@ -35,6 +35,7 @@ public class Day_03 : BaseDay
     {
         int result = 0;
 
+        // Also: foreach(var chunk in _input.Chunk(3)) && _input[0], _input[1], _input[2]
         for (int i = 0; i < _input.Length - 2; i += 3)
         {
             var first = _input[i];
