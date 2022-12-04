@@ -1,5 +1,7 @@
 # Advent of Code 2022
 
+[![CI](https://github.com/eduherminio/AoC2022/actions/workflows/ci.yml/badge.svg)](https://github.com/eduherminio/AoC2022/actions/workflows/ci.yml)
+
 [Advent Of Code 2022](https://adventofcode.com/2022) programming puzzles.
 
 Uses:
