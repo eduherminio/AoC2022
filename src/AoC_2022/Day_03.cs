@@ -34,7 +34,6 @@ public class Day_03 : BaseDay
     public override ValueTask<string> Solve_2()
     {
         int result = 0;
-
         // Also: foreach(var chunk in _input.Chunk(3)) && _input[0], _input[1], _input[2]
         for (int i = 0; i < _input.Length - 2; i += 3)
         {
@@ -121,6 +120,24 @@ public class Day_03 : BaseDay
         }
 
         return new($"{result}");
+    }
+
+    /// <summary>
+    /// |   Method |      Mean |    Error |   StdDev | Ratio | RatioSD |     Gen0 | Allocated | Alloc Ratio |
+    /// |--------- |----------:|---------:|---------:|------:|--------:|---------:|----------:|------------:|
+    /// |    Part2 |  13.54 us | 0.268 us | 0.589 us |  1.00 |    0.00 |   0.0305 |     104 B |        1.00 |
+    /// | WithSpan |  14.54 us | 0.285 us | 0.427 us |  1.06 |    0.05 |   0.0458 |     104 B |        1.00 |
+    /// | WithLinq | 324.49 us | 6.453 us | 9.255 us | 23.82 |    1.13 | 116.2109 |  243280 B |    2,339.23 |
+    /// </summary>
+    /// <returns></returns>
+    public ValueTask<string> Solve_2_Linq()
+    {
+        return new(_input
+            .Chunk(3)
+            .Select(ch => ch[0].Intersect(ch[1]).Intersect(ch[2]).First())
+            .Select(ch => char.IsUpper(ch) ? (ch - 'A' + 27) : (ch - 'a' + 1))
+            .Sum()
+            .ToString());
     }
 
     private static int CalculatePriority(char doubleElement)

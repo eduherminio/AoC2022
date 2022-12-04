@@ -22,4 +22,7 @@ public class Day_03_Part2 : BaseDayBenchmark
 
     [Benchmark]
     public async Task<string> WithSpan() => await _problem.Solve_2_WithSpan();
+
+    [Benchmark]
+    public async Task<string> WithLinq() => await _problem.Solve_2_Linq();
 }
