@@ -12,25 +12,20 @@ public class Day_04 : BaseDay
     public override ValueTask<string> Solve_1()
     {
         int result = 0;
+
         foreach (var (A, B) in _input)
         {
             if (A.Start == B.Start)
             {
                 ++result;
             }
-            else if (A.Start < B.Start)     // A..B..
+            else if (A.Start < B.Start && A.End >= B.End)       // A..B..B..A
             {
-                if (A.End >= B.End)         // A..B..B..A
-                {
-                    ++result;
-                }
+                ++result;
             }
-            else                            // B..A..
+            else if (A.Start > B.Start && A.End <= B.End)       // B..A..A..B
             {
-                if (A.End <= B.End)         // B..A..A..B
-                {
-                    ++result;
-                }
+                ++result;
             }
         }
 
@@ -40,6 +35,7 @@ public class Day_04 : BaseDay
     public override ValueTask<string> Solve_2()
     {
         int result = 0;
+
         foreach (var (A, B) in _input)
         {
             if (A.Start == B.Start || A.End == B.End)
