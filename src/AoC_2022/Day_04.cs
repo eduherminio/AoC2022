@@ -18,16 +18,16 @@ public class Day_04 : BaseDay
             {
                 ++result;
             }
-            else if (A.Start < B.Start) // A..B..
+            else if (A.Start < B.Start)     // A..B..
             {
-                if (A.End >= B.End)  // A..B..B..A
+                if (A.End >= B.End)         // A..B..B..A
                 {
                     ++result;
                 }
             }
-            else                    // B..A..
+            else                            // B..A..
             {
-                if (A.End <= B.End)  // B..A..A..B
+                if (A.End <= B.End)         // B..A..A..B
                 {
                     ++result;
                 }
@@ -39,9 +39,24 @@ public class Day_04 : BaseDay
 
     public override ValueTask<string> Solve_2()
     {
-        var solution = string.Empty;
+        int result = 0;
+        foreach (var (A, B) in _input)
+        {
+            if (A.Start == B.Start || A.End == B.End)
+            {
+                ++result;
+            }
+            else if (A.Start < B.Start && A.End >= B.Start)     // A..B..A
+            {
+                ++result;
+            }
+            else if (A.Start > B.Start && B.End >= A.Start)     // B..A..B
+            {
+                ++result;
+            }
+        }
 
-        return new(solution);
+        return new($"{result}");
     }
 
     private IEnumerable<((int, int), (int, int))> ParseInput()
