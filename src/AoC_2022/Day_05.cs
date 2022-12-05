@@ -33,7 +33,7 @@ public partial class Day_05 : BaseDay
 
     public override ValueTask<string> Solve_2()
     {
-        var (Stacks, _) = ParseInput();
+        var (Stacks, _) = ParseInput(parseMoves: false);
         _stacks = Stacks;
 
         foreach (var (Move, From, To) in _moves)
@@ -58,6 +58,7 @@ public partial class Day_05 : BaseDay
 
         int numberLineIndex = allLines.FindIndex(l => l[1] == '1');
         string numberLine = allLines[numberLineIndex];
+
         var numberOfStacks = int.Parse(numberLine.Split(' ', StringSplitOptions.RemoveEmptyEntries).Last());
         var charList = new List<List<char>>(numberOfStacks);
         for (int i = 0; i < numberOfStacks; ++i)
