@@ -8,51 +8,52 @@ public partial class Day_05 : BaseDay
     [GeneratedRegex("move (?<move>\\d+) from (?<from>\\d+) to (?<to>\\d+)", RegexOptions.ExplicitCapture | RegexOptions.Compiled)]
     private static partial Regex regex();
 
-    private List<Stack<char>> _stacks;
+    private readonly List<List<char>> _charList;
     private readonly List<(int Move, int From, int To)> _moves;
 
     public Day_05()
     {
         var (Stacks, Moves) = ParseInput();
-        _stacks = Stacks;
+        _charList = Stacks;
         _moves = Moves;
     }
 
     public override ValueTask<string> Solve_1()
     {
+        var stacks = GenerateCharStack(_charList);
+
         foreach (var (Move, From, To) in _moves)
         {
             for (int i = 0; i < Move; ++i)
             {
-                _stacks[To].Push(_stacks[From].Pop());
+                stacks[To].Push(stacks[From].Pop());
             }
         }
 
-        return new(string.Join("", _stacks.Select(s => s.Pop())));
+        return new(string.Join("", stacks.Select(s => s.Pop())));
     }
 
     public override ValueTask<string> Solve_2()
     {
-        var (Stacks, _) = ParseInput(parseMoves: false);
-        _stacks = Stacks;
+        var stacks = GenerateCharStack(_charList);
 
         foreach (var (Move, From, To) in _moves)
         {
             var itemsToMove = new List<char>(Move);
             for (int i = 0; i < Move; ++i)
             {
-                itemsToMove.Add(_stacks[From].Pop());
+                itemsToMove.Add(stacks[From].Pop());
             }
             for (int i = Move - 1; i >= 0; --i)
             {
-                _stacks[To].Push(itemsToMove[i]);
+                stacks[To].Push(itemsToMove[i]);
             }
         }
 
-        return new(string.Join("", _stacks.Select(s => s.Pop())));
+        return new(string.Join("", stacks.Select(s => s.Pop())));
     }
 
-    private (List<Stack<char>> Stacks, List<(int, int, int)> Moves) ParseInput(bool parseMoves = true)
+    private (List<List<char>> Stacks, List<(int, int, int)> Moves) ParseInput()
     {
         var allLines = File.ReadLines(InputFilePath).ToList();
 
@@ -83,17 +84,11 @@ public partial class Day_05 : BaseDay
             line = allLines[++lineIndex];
         }
 
-        var charStack = charList.ConvertAll(l => new Stack<char>(l.Reverse<char>()));
-
-        if (!parseMoves)
-        {
-            return (charStack, _moves);
-        }
-
         var moves = new List<(int, int, int)>(allLines.Count - charList.Count - 1);
 
         for (int i = lineIndex + 2; i < allLines.Count; ++i)
         {
+#pragma warning disable S3267 // Loops should be simplified with "LINQ" expressions
             foreach (var match in regex().Matches(allLines[i]).Cast<Match>())
             {
                 moves.Add((
@@ -101,8 +96,19 @@ public partial class Day_05 : BaseDay
                     int.Parse(match.Groups["from"].Value) - 1,
                     int.Parse(match.Groups["to"].Value) - 1));
             }
+#pragma warning restore S3267 // Loops should be simplified with "LINQ" expressions
         }
 
-        return (charStack, moves);
+        return (charList, moves);
+    }
+
+    /// <summary>
+    /// Copies elements, leaving <param name="charList"></param> unmodified
+    /// </summary>
+    /// <param name="charList"></param>
+    /// <returns></returns>
+    private static List<Stack<char>> GenerateCharStack(List<List<char>> charList)
+    {
+        return charList.ConvertAll(l => new Stack<char>(l.Reverse<char>()));
     }
 }
