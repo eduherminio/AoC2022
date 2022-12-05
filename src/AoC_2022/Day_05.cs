@@ -20,11 +20,11 @@ public partial class Day_05 : BaseDay
 
     public override ValueTask<string> Solve_1()
     {
-        foreach (var move in _moves)
+        foreach (var (Move, From, To) in _moves)
         {
-            for (int i = 0; i < move.Move; ++i)
+            for (int i = 0; i < Move; ++i)
             {
-                _stacks[move.To].Push(_stacks[move.From].Pop());
+                _stacks[To].Push(_stacks[From].Pop());
             }
         }
 
@@ -35,9 +35,21 @@ public partial class Day_05 : BaseDay
     {
         var (Stacks, _) = ParseInput();
         _stacks = Stacks;
-        int result = 0;
 
-        return new($"{result}");
+        foreach (var (Move, From, To) in _moves)
+        {
+            var itemsToMove = new List<char>(Move);
+            for (int i = 0; i < Move; ++i)
+            {
+                itemsToMove.Add(_stacks[From].Pop());
+            }
+            for (int i = Move - 1; i >= 0; --i)
+            {
+                _stacks[To].Push(itemsToMove[i]);
+            }
+        }
+
+        return new(string.Join("", _stacks.Select(s => s.Pop())));
     }
 
     private (List<Stack<char>> Stacks, List<(int, int, int)> Moves) ParseInput(bool parseMoves = true)
