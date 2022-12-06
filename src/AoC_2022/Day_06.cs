@@ -40,4 +40,22 @@ public class Day_06 : BaseDay
 
         throw new SolvingException();
     }
+
+    public ValueTask<string> Solve_1_WithSpan() => new($"{SolveWithSpan(_input, 4)}");
+
+    public ValueTask<string> Solve_2_WithSpan() => new($"{SolveWithSpan(_input, 14)}");
+
+    private static int SolveWithSpan(string input, int window)
+    {
+        var span = input.AsSpan();
+        for (int i = window - 1; i < input.Length; ++i)
+        {
+            if (span.Slice(i - window + 1, window).ToArray().Distinct().Count() == window)
+            {
+                return i + 1;
+            }
+        }
+
+        throw new SolvingException();
+    }
 }
