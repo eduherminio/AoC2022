@@ -41,6 +41,10 @@ public class Day_06 : BaseDay
         throw new SolvingException();
     }
 
+    public ValueTask<string> Solve_1_WithEnumerableRange() => new($"{SolveWithEnumerableRange(_input, 4)}");
+
+    public ValueTask<string> Solve_2_WithEnumerableRange() => new($"{SolveWithEnumerableRange(_input, 14)}");
+
     public ValueTask<string> Solve_1_Distinct()
     {
         for (int i = 3; i < _input.Length; ++i)
@@ -80,6 +84,20 @@ public class Day_06 : BaseDay
     public ValueTask<string> Solve_1_WithQueue() => new($"{SolveWithQueue(_input, 4)}");
 
     public ValueTask<string> Solve_2_WithQueue() => new($"{SolveWithQueue(_input, 14)}");
+
+    private static int SolveWithEnumerableRange(string input, int window)
+    {
+        for (int i = window - 1; i < input.Length; ++i)
+        {
+            var set = new HashSet<char>(Enumerable.Range(i - window + 1, window).Select(n => input[n]));
+            if (set.Count == window)
+            {
+                return i + 1;
+            }
+        }
+
+        throw new SolvingException();
+    }
 
     private static int SolveWithSpan(string input, int window)
     {

@@ -26,6 +26,9 @@ public class Day_06_Part1 : BaseDayBenchmark
     public async Task<string> Part1() => await _problem.Solve_1();
 
     [Benchmark]
+    public async Task<string> Part1_EnumerableRange() => await _problem.Solve_1_WithEnumerableRange();
+
+    [Benchmark]
     public async Task<string> Part1_Distinct() => await _problem.Solve_1_Distinct();
 
     [Benchmark]
@@ -41,6 +44,9 @@ public class Day_06_Part2 : BaseDayBenchmark
 
     [Benchmark(Baseline = true)]
     public async Task<string> Part2() => await _problem.Solve_2();
+
+    [Benchmark]
+    public async Task<string> Part2_EnumerableRange() => await _problem.Solve_2_WithEnumerableRange();
 
     [Benchmark]
     public async Task<string> Part2_Distinct() => await _problem.Solve_2_Distinct();
