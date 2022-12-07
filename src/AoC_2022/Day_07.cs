@@ -1,12 +1,10 @@
-﻿using MoreLinq;
-
-namespace AoC_2022;
+﻿namespace AoC_2022;
 
 public class Day_07 : BaseDay
 {
     public abstract record BaseCommand();
 
-    public record Cd(string Target) : BaseCommand()
+    public sealed record Cd(string Target) : BaseCommand()
     {
         public string Go(string path, File? file)
         {
@@ -38,24 +36,26 @@ public class Day_07 : BaseDay
         }
     }
 
-    public record Ls() : BaseCommand()
-    {
-        public List<FileDescriptor> Output { get; } = new();
-    }
+    public sealed record Ls() : BaseCommand() { public List<FileDescriptor> Output { get; } = new(); }
 
-    public record FileDescriptor(string Name, bool IsDirectory, long Size = -1);
+    public sealed record FileDescriptor(string Name, bool IsDirectory, long Size = -1);
 
-    public class File
+    public sealed class File
     {
         public string? ParentPath { get; set; }
 
-        public string Name { get; set; }
+        public string Name { get; init; }
 
-        public long Size { get; set; } = -1;
+        private long _size = -1;
 
-        public bool IsDirectory { get; set; }
+        public long Size
+        {
+            init { _size = value; }
+        }
 
-        public List<File> Files { get; set; } = new();
+        public bool IsDirectory { get; init; }
+
+        public List<File> Files { get; } = new();
 
         public File(string name)
         {
@@ -64,88 +64,58 @@ public class Day_07 : BaseDay
 
         public long GetSize()
         {
-            return Size == -1
-                ? Size = Files.Sum(f => f.GetSize())
-                : Size;
+            return _size == -1
+                ? _size = Files.Sum(f => f.GetSize())
+                : _size;
         }
     }
 
-    private readonly List<BaseCommand> _input;
+    private readonly File _root;
 
     public Day_07()
     {
-        _input = ParseInput().ToList();
-    }
-
-    private static long Aggregate(File currentFile)
-    {
-        var result = currentFile.IsDirectory && currentFile.GetSize() <= 100_000
-            ? currentFile.GetSize()
-            : 0;
-
-        return result + currentFile.Files.Sum(Aggregate);
-    }
-
-    private static void GetDirSize(File currentFile, HashSet<long> set, long minSize)
-    {
-        var size = currentFile.GetSize();
-        if (currentFile.IsDirectory && size >= minSize)
-        {
-            set.Add(size);
-            foreach (var file in currentFile.Files)
-            {
-                GetDirSize(file, set, minSize);
-            }
-        }
+        var input = ParseInput();
+        _root = ExtractRoot(input);
     }
 
     public override ValueTask<string> Solve_1()
     {
-        Dictionary<string, File> filePaths = new()
+        static long SumSmallerThanThreshold(File currentFile, long threshold)
         {
-            ["/"] = new File("/")
-        };
+            var result = currentFile.IsDirectory && currentFile.GetSize() <= threshold
+                ? currentFile.GetSize()
+                : 0;
 
-        string pwd = string.Empty;
-        File? currentFile = null;
+            return result + currentFile.Files.Sum(f => SumSmallerThanThreshold(f, threshold));
+        }
 
-        foreach (var command in _input)
+        return new($"{SumSmallerThanThreshold(_root, 100_000)}");
+    }
+
+    public override ValueTask<string> Solve_2()
+    {
+        static void GetDirSizes(File currentFile, HashSet<long> set, long minSize)
         {
-            if (command is Ls ls)
+            if (currentFile.IsDirectory)
             {
-                foreach (var fileDescriptor in ls.Output)
+                var size = currentFile.GetSize();
+                if (size >= minSize)
                 {
-                    var filePath = $"{pwd.TrimEnd('/')}/{fileDescriptor.Name}";
-
-                    if (!filePaths.TryGetValue(filePath, out var existingFile))
-                    {
-                        existingFile = filePaths[filePath] = new File(filePath) { IsDirectory = fileDescriptor.IsDirectory, Size = fileDescriptor.Size, ParentPath = pwd };
-                    }
-                    existingFile.ParentPath = pwd;
-
-                    currentFile!.Files.Add(existingFile);
-                }
-            }
-            else if (command is Cd cd)
-            {
-                pwd = cd.Go(pwd, currentFile);
-                if (filePaths.TryGetValue(pwd, out var existingFile))
-                {
-                    currentFile = existingFile;
-                }
-                else
-                {
-                    currentFile = filePaths[pwd] = new File(pwd);
+                    set.Add(size);
+                    currentFile.Files.ForEach(file => GetDirSizes(file, set, minSize));
                 }
             }
         }
 
-        var root = filePaths["/"];
+        var minReductionNeeded = _root.GetSize() - 70000000 + 30000000;
 
-        return new($"{Aggregate(root)}");
+        var set = new HashSet<long>();
+        GetDirSizes(_root, set, minReductionNeeded);
+
+        return new($"{set.Min()}");
     }
 
-    public override ValueTask<string> Solve_2()
+    private static File ExtractRoot(IEnumerable<BaseCommand> input)
     {
         Dictionary<string, File> filePaths = new()
         {
@@ -155,7 +125,7 @@ public class Day_07 : BaseDay
         string pwd = string.Empty;
         File? currentFile = null;
 
-        foreach (var command in _input)
+        foreach (var command in input)
         {
             if (command is Ls ls)
             {
@@ -186,14 +156,7 @@ public class Day_07 : BaseDay
             }
         }
 
-        var root = filePaths["/"];
-        var size = root.GetSize();
-        var reductionNeeded = size - 70000000 + 30000000;
-
-        var set = new HashSet<long>();
-        GetDirSize(root, set, reductionNeeded);
-
-        return new($"{set.Min()}");
+        return filePaths["/"];
     }
 
     private IEnumerable<BaseCommand> ParseInput()
