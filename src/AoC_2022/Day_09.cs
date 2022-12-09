@@ -2,6 +2,19 @@
 
 namespace AoC_2022;
 
+public static class IntPointExtensions
+{
+    public static int ChebyshevDistance(this IntPoint point, IntPoint otherPoint)
+    {
+        var xDelta = Math.Abs(point.X - otherPoint.X);
+        var yDelta = Math.Abs(point.Y - otherPoint.Y);
+
+        return xDelta >= yDelta
+            ? xDelta
+            : yDelta;
+    }
+}
+
 public class Day_09 : BaseDay
 {
     private readonly List<(Direction direction, int distance)> _input;
@@ -11,10 +24,10 @@ public class Day_09 : BaseDay
         _input = ParseInput().ToList();
     }
 
-    public override ValueTask<string> Solve_1() => new($"{GenericSolve(_input, 1)}");
-    public override ValueTask<string> Solve_2() => new($"{GenericSolve(_input, 9)}");
+    public override ValueTask<string> Solve_1() => Solve_1_ChebyshevDistance();
+    public override ValueTask<string> Solve_2() => Solve_2_ChebyshevDistance();
 
-    private static int GenericSolve(List<(Direction direction, int distance)> input, int knotsCount)
+    private static int GenericSolve_Distance(List<(Direction direction, int distance)> input, int knotsCount)
     {
         var tailSet = new HashSet<IntPoint>(input.Count);
 
@@ -38,10 +51,94 @@ public class Day_09 : BaseDay
 
                     knot = distance switch
                     {
-                        2 => GetCloserVerticallyOrHorizontally(knot, reference),
+                        2 => GetCloserVerticallyOrHorizontally(reference, knot),
                         > 1.42 => GetCloserDiagonally(reference, knot),    // Math.Sqrt(2) == 1.4142
                         _ => knot
                     };
+                    knots[knotIndex] = knot;
+
+                    reference = knot;
+                }
+                tailSet.Add(knots[knotsCount - 1]);
+                ////Print(head, knots);
+            }
+            //Print(head, knots);
+        }
+
+        return tailSet.Count;
+    }
+
+    private static int GenericSolve_ChebyshevDistance(List<(Direction direction, int distance)> input, int knotsCount)
+    {
+        var tailSet = new HashSet<IntPoint>(input.Count);
+
+        var head = new IntPoint(0, 0);
+        var knots = new List<IntPoint>(knotsCount);
+        for (int i = 0; i < knotsCount; ++i) { knots.Add(new(0, 0)); }
+
+        //Print(head, knots);
+
+        foreach (var (direction, steps) in input)
+        {
+            for (int step = 0; step < steps; step++)
+            {
+                head = head.Move(direction);
+
+                var reference = head;
+                for (int knotIndex = 0; knotIndex < knots.Count; ++knotIndex)
+                {
+                    var knot = knots[knotIndex];
+                    var distance = knot.ChebyshevDistance(reference);
+
+                    if (distance == 2)
+                    {
+                        knots[knotIndex] = knot = GetCloser(reference, knot);
+                    }
+
+                    reference = knot;
+                }
+                tailSet.Add(knots[knotsCount - 1]);
+                ////Print(head, knots);
+            }
+            //Print(head, knots);
+        }
+
+        return tailSet.Count;
+    }
+
+    private static int GenericSolve_ManhattanDistance(List<(Direction direction, int distance)> input, int knotsCount)
+    {
+        var tailSet = new HashSet<IntPoint>(input.Count);
+
+        var head = new IntPoint(0, 0);
+        var knots = new List<IntPoint>(knotsCount);
+        for (int i = 0; i < knotsCount; ++i) { knots.Add(new(0, 0)); }
+
+        //Print(head, knots);
+
+        foreach (var (direction, steps) in input)
+        {
+            for (int step = 0; step < steps; step++)
+            {
+                head = head.Move(direction);
+
+                var reference = head;
+                for (int knotIndex = 0; knotIndex < knots.Count; ++knotIndex)
+                {
+                    var knot = knots[knotIndex];
+                    var distance = knot.ManhattanDistance(reference);
+
+                    knot = distance switch
+                    {
+                        2 => reference.X == knot.X
+                            ? GetCloserVertically(reference, knot)
+                            : (reference.Y == knot.Y
+                                ? GetCloserHorizontally(reference, knot)
+                                : knot),
+                        >= 3 => GetCloserDiagonally(reference, knot),
+                        _ => knot
+                    };
+
                     knots[knotIndex] = knot;
 
                     reference = knot;
@@ -72,19 +169,49 @@ public class Day_09 : BaseDay
     /// <returns></returns>
     private static IntPoint GetCloserVerticallyOrHorizontally(IntPoint reference, IntPoint tail)
     {
-        Direction direction;
-
         if (reference.X == tail.X)
         {
-            direction = reference.Y > tail.Y ? Direction.Up : Direction.Down;
-        }
-        else
-        {
-            direction = reference.X > tail.X ? Direction.Right : Direction.Left;
+            return GetCloserVertically(reference, tail);
         }
 
-        return tail.Move(direction);
+        return GetCloserHorizontally(reference, tail);
     }
+
+    private static IntPoint GetCloserVertically(IntPoint reference, IntPoint tail)
+    {
+        return tail.Move(reference.Y > tail.Y ? Direction.Up : Direction.Down);
+    }
+
+    private static IntPoint GetCloserHorizontally(IntPoint reference, IntPoint tail)
+    {
+        return tail.Move(reference.X > tail.X ? Direction.Right : Direction.Left);
+    }
+
+    private static IntPoint GetCloser(IntPoint reference, IntPoint tail)
+    {
+        if (reference.X == tail.X)
+        {
+            return tail.Move(reference.Y > tail.Y ? Direction.Up : Direction.Down);
+        }
+        if (reference.Y == tail.Y)
+        {
+            return tail.Move(reference.X > tail.X ? Direction.Right : Direction.Left);
+        }
+
+        Direction horizontal = reference.X > tail.X ? Direction.Right : Direction.Left;
+        Direction vertical = reference.Y > tail.Y ? Direction.Up : Direction.Down;
+
+        return tail.Move(horizontal).Move(vertical);
+    }
+
+    public ValueTask<string> Solve_1_Distance() => new($"{GenericSolve_Distance(_input, 1)}");
+    public ValueTask<string> Solve_2_Distance() => new($"{GenericSolve_Distance(_input, 9)}");
+
+    public ValueTask<string> Solve_1_ChebyshevDistance() => new($"{GenericSolve_ChebyshevDistance(_input, 1)}");
+    public ValueTask<string> Solve_2_ChebyshevDistance() => new($"{GenericSolve_ChebyshevDistance(_input, 9)}");
+
+    public ValueTask<string> Solve_1_ManhattanDistance() => new($"{GenericSolve_ManhattanDistance(_input, 1)}");
+    public ValueTask<string> Solve_2_ManhattanDistance() => new($"{GenericSolve_ManhattanDistance(_input, 9)}");
 
     public ValueTask<string> Solve_1_Original()
     {
@@ -113,7 +240,6 @@ public class Day_09 : BaseDay
 
         return new($"{tailSet.Count}");
     }
-
     public ValueTask<string> Solve_2_Original()
     {
         var tailSet = new HashSet<IntPoint>(_input.Count);
