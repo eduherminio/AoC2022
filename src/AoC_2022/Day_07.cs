@@ -38,7 +38,7 @@ public class Day_07 : BaseDay
 
     public sealed record Ls() : BaseCommand() { public List<FileDescriptor> Output { get; } = new(); }
 
-    public sealed record FileDescriptor(string Name, bool IsDirectory, long Size = -1);
+    public sealed record FileDescriptor(string Name, bool IsDirectory, int Size = -1);
 
     public sealed class File
     {
@@ -46,9 +46,9 @@ public class Day_07 : BaseDay
 
         public string Name { get; init; }
 
-        private long _size = -1;
+        private int _size = -1;
 
-        public long Size
+        public int Size
         {
             init { _size = value; }
         }
@@ -62,7 +62,7 @@ public class Day_07 : BaseDay
             Name = name;
         }
 
-        public long GetSize()
+        public int GetSize()
         {
             return _size == -1
                 ? _size = Files.Sum(f => f.GetSize())
@@ -80,7 +80,7 @@ public class Day_07 : BaseDay
 
     public override ValueTask<string> Solve_1()
     {
-        static long SumSmallerThanThreshold(File currentFile, long threshold)
+        static int SumSmallerThanThreshold(File currentFile, int threshold)
         {
             var result = currentFile.IsDirectory && currentFile.GetSize() <= threshold
                 ? currentFile.GetSize()
@@ -94,7 +94,7 @@ public class Day_07 : BaseDay
 
     public override ValueTask<string> Solve_2()
     {
-        static void GetDirSizes(File currentFile, HashSet<long> set, long minSize)
+        static void GetDirSizes(File currentFile, HashSet<int> set, int minSize)
         {
             if (currentFile.IsDirectory)
             {
@@ -109,7 +109,7 @@ public class Day_07 : BaseDay
 
         var minReductionNeeded = _root.GetSize() - 70000000 + 30000000;
 
-        var set = new HashSet<long>();
+        var set = new HashSet<int>();
         GetDirSizes(_root, set, minReductionNeeded);
 
         return new($"{set.Min()}");
@@ -201,7 +201,7 @@ public class Day_07 : BaseDay
                 }
                 else
                 {
-                    ls.Output.Add(new(line.NextElement<string>(), false, long.Parse(firstElement)));
+                    ls.Output.Add(new(line.NextElement<string>(), false, int.Parse(firstElement)));
                 }
             }
 
