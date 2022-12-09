@@ -1,5 +1,4 @@
 ﻿using SheepTools.Model;
-using System.Security.AccessControl;
 
 namespace AoC_2022;
 
@@ -12,16 +11,83 @@ public class Day_09 : BaseDay
         _input = ParseInput().ToList();
     }
 
-    public override ValueTask<string> Solve_1()
-    {
-        static IntPoint GetCloser(IntPoint head, IntPoint tail)
-        {
-            Direction horizontal = head.X > tail.X ? Direction.Right : Direction.Left;
-            Direction vertical = head.Y > tail.Y ? Direction.Up : Direction.Down;
+    public override ValueTask<string> Solve_1() => new($"{GenericSolve(_input, 1)}");
+    public override ValueTask<string> Solve_2() => new($"{GenericSolve(_input, 9)}");
 
-            return tail.Move(horizontal).Move(vertical);
+    private static int GenericSolve(List<(Direction direction, int distance)> input, int knotsCount)
+    {
+        var tailSet = new HashSet<IntPoint>(input.Count);
+
+        var head = new IntPoint(0, 0);
+        var knots = new List<IntPoint>(knotsCount);
+        for (int i = 0; i < knotsCount; ++i) { knots.Add(new(0, 0)); }
+
+        //Print(head, knots);
+
+        foreach (var (direction, steps) in input)
+        {
+            for (int step = 0; step < steps; step++)
+            {
+                head = head.Move(direction);
+
+                var reference = head;
+                for (int knotIndex = 0; knotIndex < knots.Count; ++knotIndex)
+                {
+                    var knot = knots[knotIndex];
+                    var distance = knot.DistanceTo(reference);
+
+                    knot = distance switch
+                    {
+                        2 => GetCloserVerticallyOrHorizontally(knot, reference),
+                        > 1.42 => GetCloserDiagonally(reference, knot),    // Math.Sqrt(2) == 1.4142
+                        _ => knot
+                    };
+                    knots[knotIndex] = knot;
+
+                    reference = knot;
+                }
+                tailSet.Add(knots[knotsCount - 1]);
+                ////Print(head, knots);
+            }
+            //Print(head, knots);
         }
 
+        return tailSet.Count;
+    }
+
+    private static IntPoint GetCloserDiagonally(IntPoint reference, IntPoint tail)
+    {
+        Direction horizontal = reference.X > tail.X ? Direction.Right : Direction.Left;
+        Direction vertical = reference.Y > tail.Y ? Direction.Up : Direction.Down;
+
+        return tail.Move(horizontal).Move(vertical);
+    }
+
+    /// <summary>
+    /// When following a reference instead of free-will movement (reference != head) and distance == 2,
+    /// movement's direction isn't necessarily head's direction
+    /// </summary>
+    /// <param name="reference"></param>
+    /// <param name="tail"></param>
+    /// <returns></returns>
+    private static IntPoint GetCloserVerticallyOrHorizontally(IntPoint reference, IntPoint tail)
+    {
+        Direction direction;
+
+        if (reference.X == tail.X)
+        {
+            direction = reference.Y > tail.Y ? Direction.Up : Direction.Down;
+        }
+        else
+        {
+            direction = reference.X > tail.X ? Direction.Right : Direction.Left;
+        }
+
+        return tail.Move(direction);
+    }
+
+    public ValueTask<string> Solve_1_Original()
+    {
         var tailSet = new HashSet<IntPoint>(_input.Count);
         var head = new IntPoint(0, 0);
         var tail = new IntPoint(0, 0);
@@ -37,7 +103,7 @@ public class Day_09 : BaseDay
                 tail = distance switch
                 {
                     2 => tail.Move(direction),
-                    > 1.42 => GetCloser(head, tail),    // Math.Sqrt(2) == 1.4142
+                    > 1.42 => GetCloserDiagonally(head, tail),    // Math.Sqrt(2) == 1.4142
                     _ => tail
                 };
                 tailSet.Add(tail);
@@ -48,31 +114,8 @@ public class Day_09 : BaseDay
         return new($"{tailSet.Count}");
     }
 
-    public override ValueTask<string> Solve_2()
+    public ValueTask<string> Solve_2_Original()
     {
-        static IntPoint GetCloserDiagonally(IntPoint head, IntPoint tail)
-        {
-            Direction horizontal = head.X > tail.X ? Direction.Right : Direction.Left;
-            Direction vertical = head.Y > tail.Y ? Direction.Up : Direction.Down;
-
-            return tail.Move(horizontal).Move(vertical);
-        }
-
-        static IntPoint GetCloserVerticalOrHorizontally(IntPoint head, IntPoint tail)
-        {
-            Direction direction;
-            if (head.X == tail.X)
-            {
-                direction = head.Y > tail.Y ? Direction.Up : Direction.Down;
-            }
-            else
-            {
-                direction = head.X > tail.X ? Direction.Right : Direction.Left;
-            }
-
-            return tail.Move(direction);
-        }
-
         var tailSet = new HashSet<IntPoint>(_input.Count);
         var head = new IntPoint(0, 0);
         var knots = new List<IntPoint>(9);
@@ -94,7 +137,7 @@ public class Day_09 : BaseDay
 
                     knot = distance switch
                     {
-                        2 => GetCloserVerticalOrHorizontally(knot, reference),
+                        2 => GetCloserVerticallyOrHorizontally(knot, reference),
                         > 1.42 => GetCloserDiagonally(reference, knot),    // Math.Sqrt(2) == 1.4142
                         _ => knot
                     };
@@ -164,11 +207,11 @@ public class Day_09 : BaseDay
                 else
                 {
                     bool foundKnot = false;
-                    for (int i = 1; i <= knots.Count; ++i)
+                    for (int i = 0; i < knots.Count; ++i)
                     {
-                        if (knots[i - 1].X == x && knots[i - 1].Y == y)
+                        if (knots[i].X == x && knots[i].Y == y)
                         {
-                            Console.Write(i);
+                            Console.Write(i + 1);
                             foundKnot = true;
                             break;
                         }
