@@ -1,4 +1,5 @@
 ﻿using SheepTools.Model;
+using System.Security.AccessControl;
 
 namespace AoC_2022;
 
@@ -40,8 +41,6 @@ public class Day_09 : BaseDay
                     _ => tail
                 };
                 tailSet.Add(tail);
-
-                tailSet.Add(tail);
                 //Print(head, tail);
             }
         }
@@ -51,12 +50,68 @@ public class Day_09 : BaseDay
 
     public override ValueTask<string> Solve_2()
     {
-        int result = 0;
+        static IntPoint GetCloserDiagonally(IntPoint head, IntPoint tail)
+        {
+            Direction horizontal = head.X > tail.X ? Direction.Right : Direction.Left;
+            Direction vertical = head.Y > tail.Y ? Direction.Up : Direction.Down;
 
-        return new($"{result}");
+            return tail.Move(horizontal).Move(vertical);
+        }
+
+        static IntPoint GetCloserVerticalOrHorizontally(IntPoint head, IntPoint tail)
+        {
+            Direction direction;
+            if (head.X == tail.X)
+            {
+                direction = head.Y > tail.Y ? Direction.Up : Direction.Down;
+            }
+            else
+            {
+                direction = head.X > tail.X ? Direction.Right : Direction.Left;
+            }
+
+            return tail.Move(direction);
+        }
+
+        var tailSet = new HashSet<IntPoint>(_input.Count);
+        var head = new IntPoint(0, 0);
+        var knots = new List<IntPoint>(9);
+        for (int i = 0; i < 9; ++i) { knots.Add(new(0, 0)); }
+
+        //Print(head, knots);
+
+        foreach (var (direction, steps) in _input)
+        {
+            for (int step = 0; step < steps; step++)
+            {
+                head = head.Move(direction);
+
+                var reference = head;
+                for (int knotIndex = 0; knotIndex < knots.Count; ++knotIndex)
+                {
+                    var knot = knots[knotIndex];
+                    var distance = knot.DistanceTo(reference);
+
+                    knot = distance switch
+                    {
+                        2 => GetCloserVerticalOrHorizontally(knot, reference),
+                        > 1.42 => GetCloserDiagonally(reference, knot),    // Math.Sqrt(2) == 1.4142
+                        _ => knot
+                    };
+                    knots[knotIndex] = knot;
+
+                    reference = knot;
+                }
+                tailSet.Add(knots[8]);
+                ////Print(head, knots);
+            }
+            //Print(head, knots);
+        }
+
+        return new($"{tailSet.Count}");
     }
 
-    private void Print(IntPoint head, IntPoint tail)
+    private static void Print(IntPoint head, IntPoint tail)
     {
         var maxY = new[] { 0, head.Y, tail.Y }.Max() + 2;
         var maxX = new[] { 0, head.X, tail.X }.Max() + 2;
@@ -83,6 +138,52 @@ public class Day_09 : BaseDay
                 else
                 {
                     Console.Write("-");
+                }
+            }
+            Console.WriteLine();
+        }
+        Console.WriteLine("##################");
+    }
+
+    private static void Print(IntPoint head, List<IntPoint> knots)
+    {
+        var maxY = knots.Select(k => k.Y).Append(0).Append(head.Y).Max() + 2;
+        var maxX = knots.Select(k => k.X).Append(0).Append(head.X).Max() + 2;
+
+        var minY = knots.Select(k => k.Y).Append(0).Append(head.Y).Min() - 1;
+        var minX = knots.Select(k => k.X).Append(0).Append(head.X).Min() - 1;
+
+        for (int y = minY; y < maxY; ++y)
+        {
+            for (int x = minX; x < maxX; ++x)
+            {
+                if (x == head.X && y == head.Y)
+                {
+                    Console.Write("H");
+                }
+                else
+                {
+                    bool foundKnot = false;
+                    for (int i = 1; i <= knots.Count; ++i)
+                    {
+                        if (knots[i - 1].X == x && knots[i - 1].Y == y)
+                        {
+                            Console.Write(i);
+                            foundKnot = true;
+                            break;
+                        }
+                    }
+                    if (!foundKnot)
+                    {
+                        if (x == 0 && y == 0)
+                        {
+                            Console.Write('0');
+                        }
+                        else
+                        {
+                            Console.Write("-");
+                        }
+                    }
                 }
             }
             Console.WriteLine();
