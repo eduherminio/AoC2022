@@ -1,10 +1,12 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace AoC_2022;
 
 public partial class Day_11 : BaseDay
 {
-    public record Monkey(int Number, List<int> Items, Func<int, int> Operation, int DivisibleByTest, int TrueMonkey, int FalseMonkey);
+    public record Monkey(int Number, List<long> Items, Func<long, long> Operation, int DivisibleByTest, int TrueMonkey, int FalseMonkey);
 
     [GeneratedRegex($@"Monkey (?<{nameof(_monkeyNumberRegex)}>\d+):", RegexOptions.ExplicitCapture | RegexOptions.Compiled)]
     private static partial Regex _monkeyNumberRegex();
@@ -44,7 +46,7 @@ public partial class Day_11 : BaseDay
                 foreach (var item in monkey.Items)
                 {
                     var newItem = monkey.Operation(item) / 3;
-                    var nextMonkey = newItem % monkey.DivisibleByTest == 0 ? monkey.TrueMonkey : monkey.FalseMonkey;
+                    var nextMonkey = newItem % (long)monkey.DivisibleByTest == 0 ? monkey.TrueMonkey : monkey.FalseMonkey;
                     _input[nextMonkey].Items.Add(newItem);
                 }
                 monkey.Items.Clear();
@@ -56,9 +58,40 @@ public partial class Day_11 : BaseDay
 
     public override ValueTask<string> Solve_2()
     {
-        int result = 0;
+        var input = ParseInput().ToList();
 
-        return new($"{result}");
+        var inspectedItems = new int[input.Count];
+        var lcm = (long)SheepTools.Maths.LeastCommonMultiple(input.Select(m => (ulong)m.DivisibleByTest));
+
+        for (int round = 1; round <= 10_000; ++round)
+        {
+            //if (round % 100 == 0)
+            //{
+            //    Console.WriteLine(round);
+            //}
+
+            for (int monkeyIndex = 0; monkeyIndex < input.Count; ++monkeyIndex)
+            {
+                var monkey = input[monkeyIndex];
+                inspectedItems[monkeyIndex] += monkey.Items.Count;
+
+                foreach (var item in monkey.Items)
+                {
+                    var newItem = monkey.Operation(item);
+                    var nextMonkey = newItem % monkey.DivisibleByTest == 0 ? monkey.TrueMonkey : monkey.FalseMonkey;
+
+                    while (newItem > 2 * lcm)
+                    {
+                        newItem -= lcm;
+                    }
+
+                    input[nextMonkey].Items.Add(newItem);
+                }
+                monkey.Items.Clear();
+            }
+        }
+
+        return new($"{inspectedItems.OrderDescending().Take(2).Aggregate(1d, (total, element) => total * element)}");
     }
 
     private IEnumerable<Monkey> ParseInput()
@@ -66,7 +99,7 @@ public partial class Day_11 : BaseDay
         foreach (var group in ParsedFile.ReadAllGroupsOfLines(InputFilePath))
         {
             int monkeyNumber = int.Parse(_monkeyNumberRegex().Match(group[0]).Groups[nameof(_monkeyNumberRegex)].Value);
-            List<int> startingItems = _startingItemRegex().Matches(group[1]).Select(match => int.Parse(match.Groups[nameof(_startingItemRegex)].Value)).ToList();
+            List<long> startingItems = _startingItemRegex().Matches(group[1]).Select(match => long.Parse(match.Groups[nameof(_startingItemRegex)].Value)).ToList();
             string operationString = _operationRegex().Match(group[2]).Groups[nameof(_operationRegex)].Value;
             int divisibleBy = int.Parse(_testRegex().Match(group[3]).Groups[nameof(_testRegex)].Value);
             int monkeyToThrowIfTrue = int.Parse(_trueTestResultRegex().Match(group[4]).Groups[nameof(_trueTestResultRegex)].Value);
@@ -74,10 +107,10 @@ public partial class Day_11 : BaseDay
 
             var operationItems = operationString.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-            var isIntA = int.TryParse(operationItems[0], out int a);
-            var isIntB = int.TryParse(operationItems[2], out int b);
+            var isIntA = long.TryParse(operationItems[0], out long a);
+            var isIntB = long.TryParse(operationItems[2], out long b);
 
-            Func<int, int> op = operationItems[1] switch
+            Func<long, long> op = operationItems[1] switch
             {
                 "+" => (old) => (isIntA ? a : old) + (isIntB ? b : old),
                 "-" => (old) => (isIntA ? a : old) - (isIntB ? b : old),
