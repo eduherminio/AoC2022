@@ -1,6 +1,4 @@
-﻿using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace AoC_2022;
 
@@ -28,42 +26,26 @@ public partial class Day_11 : BaseDay
 
     private readonly List<Monkey> _input;
 
-    public Day_11()
-    {
-        _input = ParseInput().ToList();
-    }
-
     public override ValueTask<string> Solve_1()
     {
-        var inspectedItems = new int[_input.Count];
-        for (int round = 1; round <= 20; ++round)
-        {
-            for (int monkeyIndex = 0; monkeyIndex < _input.Count; ++monkeyIndex)
-            {
-                var monkey = _input[monkeyIndex];
-                inspectedItems[monkeyIndex] += monkey.Items.Count;
+        var input = ParseInput().ToList();
 
-                foreach (var item in monkey.Items)
-                {
-                    var newItem = monkey.Operation(item) / 3;
-                    var nextMonkey = newItem % (long)monkey.DivisibleByTest == 0 ? monkey.TrueMonkey : monkey.FalseMonkey;
-                    _input[nextMonkey].Items.Add(newItem);
-                }
-                monkey.Items.Clear();
-            }
-        }
-
-        return new($"{inspectedItems.OrderDescending().Take(2).Aggregate(1, (total, element) => total * element)}");
+        return new($"{GenericSolve(input, 20, (newItem) => newItem / 3)}");
     }
 
     public override ValueTask<string> Solve_2()
     {
         var input = ParseInput().ToList();
-
-        var inspectedItems = new int[input.Count];
         var lcm = (long)SheepTools.Maths.LeastCommonMultiple(input.Select(m => (ulong)m.DivisibleByTest));
 
-        for (int round = 1; round <= 10_000; ++round)
+        return new($"{GenericSolve(input, 10_000, (newItem) => newItem % lcm)}");
+    }
+
+    public static double GenericSolve(List<Monkey> input, int rounds, Func<long, long> manageWorryLevel)
+    {
+        var inspectedItems = new int[input.Count];
+
+        for (int round = 1; round <= rounds; ++round)
         {
             //if (round % 100 == 0)
             //{
@@ -78,7 +60,7 @@ public partial class Day_11 : BaseDay
                 foreach (var item in monkey.Items)
                 {
                     var newItem = monkey.Operation(item);
-                    newItem %= lcm;
+                    newItem = manageWorryLevel(newItem);
                     var nextMonkey = newItem % monkey.DivisibleByTest == 0 ? monkey.TrueMonkey : monkey.FalseMonkey;
 
                     input[nextMonkey].Items.Add(newItem);
@@ -87,7 +69,7 @@ public partial class Day_11 : BaseDay
             }
         }
 
-        return new($"{inspectedItems.OrderDescending().Take(2).Aggregate(1d, (total, element) => total * element)}");
+        return inspectedItems.OrderDescending().Take(2).Aggregate(1d, (total, element) => total * element);
     }
 
     private IEnumerable<Monkey> ParseInput()
