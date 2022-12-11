@@ -78,12 +78,8 @@ public partial class Day_11 : BaseDay
                 foreach (var item in monkey.Items)
                 {
                     var newItem = monkey.Operation(item);
+                    newItem %= lcm;
                     var nextMonkey = newItem % monkey.DivisibleByTest == 0 ? monkey.TrueMonkey : monkey.FalseMonkey;
-
-                    while (newItem > 2 * lcm)
-                    {
-                        newItem -= lcm;
-                    }
 
                     input[nextMonkey].Items.Add(newItem);
                 }
