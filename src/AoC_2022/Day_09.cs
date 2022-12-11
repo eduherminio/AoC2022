@@ -2,19 +2,6 @@
 
 namespace AoC_2022;
 
-public static class IntPointExtensions
-{
-    public static int ChebyshevDistance(this IntPoint point, IntPoint otherPoint)
-    {
-        var xDelta = Math.Abs(point.X - otherPoint.X);
-        var yDelta = Math.Abs(point.Y - otherPoint.Y);
-
-        return xDelta >= yDelta
-            ? xDelta
-            : yDelta;
-    }
-}
-
 public class Day_09 : BaseDay
 {
     private readonly List<(Direction direction, int distance)> _input;
