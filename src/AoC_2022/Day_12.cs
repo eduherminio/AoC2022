@@ -1,83 +1,72 @@
 ﻿using MoreLinq.Extensions;
-using System.Text.RegularExpressions.Generated;
+using System.Diagnostics;
 using Direction = SheepTools.Model.Direction;
 
 namespace AoC_2022;
 
 public class Day_12 : BaseDay
 {
-    private record Point(char Value, int X, int Y) : SheepTools.Model.IntPointWithValue<char>(Value, X, Y)
+    private sealed record Point(char Value, int X, int Y) : SheepTools.Model.IntPointWithValue<char>(Value, X, Y)
     {
         public List<Point> PossibleDestinationSquares { get; } = new List<Point>();
     }
-    private List<List<Point>> _input;
+
+    private readonly Point _start;
+    private readonly Point _end;
+    private readonly List<Point> _input;
 
     public Day_12()
     {
-        _input = ParseInput().ToList();
+        var lines = File.ReadAllLines(InputFilePath);
+        _input = ParsePoints(lines).ToList();
+
+        (_start, _end) = ExtractStartAndEnd(_input);
+        _input = AddPossibleDestinationSquares(_input, lines[0].Length, lines.Length);
     }
 
     public override ValueTask<string> Solve_1()
     {
-        Point start = new(' ', 1, -1), end = new(' ', 1, -1);
+        return new($"{Dijkstra(_input, _start, _end)}");
+    }
 
-        for (int y = 0; y < _input.Count; ++y)
+    public override ValueTask<string> Solve_2()
+    {
+        var minDistace = int.MaxValue;
+
+        foreach (var newStart in _input.Where(p => p.Value == 'a'))
         {
-            for (int x = 0; x < _input[y].Count; ++x)
-            {
-                var point = _input[y][x];
+            var distance = Dijkstra(_input, newStart, _end, minDistace);
 
-                if (point.Value == 'S')
-                {
-                    point.Value = 'a';
-                    start = point;
-                }
-                else if (point.Value == 'E')
-                {
-                    point.Value = 'z';
-                    end = point;
-                }
+            if (distance < minDistace && distance > 0)
+            {
+                minDistace = distance;
             }
         }
 
-        for (int y = 0; y < _input.Count; ++y)
+        return new($"{minDistace}");
+    }
+
+    private static int Dijkstra(List<Point> input, Point start, Point end, int? maxDistance = null)
+    {
+        PriorityQueue<Point, int> priorityQueue = new(input.Count);
+        Dictionary<Point, Point?> previousNode = new(input.Count);
+        Dictionary<Point, int> distanceToSource = new(input.Count)
         {
-            for (int x = 0; x < _input[y].Count; ++x)
-            {
-                var point = _input[y][x];
+            [start] = 0
+        };
 
-                foreach (var neighbour in new[] { point.Move(Direction.Up), point.Move(Direction.Down), point.Move(Direction.Left), point.Move(Direction.Right) })
-                {
-                    if (neighbour.X >= 0 && neighbour.Y >= 0 && neighbour.X < _input[0].Count && neighbour.Y < _input.Count)
-                    {
-                        var realNeighbour = _input[neighbour.Y][neighbour.X];
-                        if (realNeighbour.Value - 1 <= point.Value)
-                        {
-                            point.PossibleDestinationSquares.Add(realNeighbour);
-                        }
-                    }
-                }
-            }
-        }
-
-        var flatInput = _input.SelectMany(l => l);
-        Dictionary<Point, int> distanceToSource = new();
-        Dictionary<Point, Point?> prevHopFromSource = new();
-        var priorityQueue = new PriorityQueue<Point, int>(_input.Count * _input[0].Count);
-
-        distanceToSource[start] = 0;
-        foreach (var point in flatInput)
+        foreach (var point in input)
         {
             if (point != start)
             {
                 distanceToSource[point] = int.MaxValue;
-                prevHopFromSource[point] = null;
+                previousNode[point] = null;
             }
+
             priorityQueue.Enqueue(point, distanceToSource[point]);
         }
 
-        bool solutionFound = false;
-        while (!solutionFound && priorityQueue.TryDequeue(out var node, out var priority))
+        while (priorityQueue.TryDequeue(out var node, out var priority))
         {
             foreach (var neighbour in node.PossibleDestinationSquares)
             {
@@ -85,137 +74,86 @@ public class Day_12 : BaseDay
                 if (distance < distanceToSource[neighbour])
                 {
                     distanceToSource[neighbour] = distance;
-                    prevHopFromSource[neighbour] = node;
                     priorityQueue.Enqueue(neighbour, distance);
+                    previousNode[neighbour] = node;
 
                     if (neighbour == end)
                     {
-                        solutionFound = true;
-                        break;
+                        return distance;
+                    }
+
+                    // Extra optimization, in case there's a way longer path
+                    if (distance >= maxDistance)
+                    {
+                        return -1;
                     }
                 }
             }
         }
 
-        var path = new List<Point>();
-        Point? current = end;
-        while (current is not null)
-        {
-            if (!prevHopFromSource.TryGetValue(current, out var previous))
-            {
-                break;
-            }
-            path.Add(current);
-            current = previous;
-        }
-
-        path.Reverse();
-
-        return new($"{distanceToSource[end]}");
+        throw new SolvingException();
     }
 
-    public override ValueTask<string> Solve_2()
-    {
-        _input = ParseInput().ToList();
-
-        Point start = new(' ', 1, -1), end = new(' ', 1, -1);
-
-        for (int y = 0; y < _input.Count; ++y)
-        {
-            for (int x = 0; x < _input[y].Count; ++x)
-            {
-                var point = _input[y][x];
-
-                if (point.Value == 'S')
-                {
-                    point.Value = 'a';
-                    start = point;
-                }
-                else if (point.Value == 'E')
-                {
-                    point.Value = 'z';
-                    end = point;
-                }
-            }
-        }
-
-        for (int y = 0; y < _input.Count; ++y)
-        {
-            for (int x = 0; x < _input[y].Count; ++x)
-            {
-                var point = _input[y][x];
-
-                foreach (var neighbour in new[] { point.Move(Direction.Up), point.Move(Direction.Down), point.Move(Direction.Left), point.Move(Direction.Right) })
-                {
-                    if (neighbour.X >= 0 && neighbour.Y >= 0 && neighbour.X < _input[0].Count && neighbour.Y < _input.Count)
-                    {
-                        var realNeighbour = _input[neighbour.Y][neighbour.X];
-                        if (realNeighbour.Value - 1 <= point.Value)
-                        {
-                            point.PossibleDestinationSquares.Add(realNeighbour);
-                        }
-                    }
-                }
-            }
-        }
-
-        var flatInput = _input.SelectMany(l => l);
-        var minDistace = int.MaxValue;
-
-        foreach (var newStart in flatInput.Where(p => p.Value == 'a'))
-        {
-            Dictionary<Point, int> distanceToSource = new();
-            Dictionary<Point, Point?> prevHopFromSource = new();
-            var priorityQueue = new PriorityQueue<Point, int>(_input.Count * _input[0].Count);
-
-            distanceToSource[newStart] = 0;
-            foreach (var point in flatInput)
-            {
-                if (point != newStart)
-                {
-                    distanceToSource[point] = int.MaxValue;
-                    prevHopFromSource[point] = null;
-                }
-                priorityQueue.Enqueue(point, distanceToSource[point]);
-            }
-
-            bool solutionFound = false;
-            while (!solutionFound && priorityQueue.TryDequeue(out var node, out var priority))
-            {
-                foreach (var neighbour in node.PossibleDestinationSquares)
-                {
-                    var distance = priority + 1;    // Distance between source and node + distance between neighbourd and node
-                    if (distance < distanceToSource[neighbour])
-                    {
-                        distanceToSource[neighbour] = distance;
-                        prevHopFromSource[neighbour] = node;
-                        priorityQueue.Enqueue(neighbour, distance);
-
-                        if (neighbour == end)
-                        {
-                            solutionFound = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (distanceToSource[end] < minDistace && distanceToSource[end] > 0)
-            {
-                minDistace = distanceToSource[end];
-            }
-        }
-
-        return new($"{minDistace}");
-    }
-
-    private IEnumerable<List<Point>> ParseInput()
+    private static IEnumerable<Point> ParsePoints(string[] lines)
     {
         int y = 0;
-        foreach (var line in File.ReadAllLines(InputFilePath))
+        foreach (var line in lines)
         {
-            yield return line.Select((ch, x) => new Point(ch, x, y)).ToList();
+            for (int x = 0; x < line.Length; ++x)
+            {
+                yield return new Point(line[x], x, y);
+            }
             ++y;
         }
+    }
+
+    /// <summary>
+    /// Also replaces start point value with 'a' and end point value with 'z'
+    /// </summary>
+    /// <param name="input"></param>
+    /// <returns></returns>
+    /// <exception cref="SolvingException"></exception>
+    private static (Point, Point) ExtractStartAndEnd(List<Point> input)
+    {
+        Point? start = default, end = default;
+
+        foreach (var point in input)
+        {
+            if (point.Value == 'S')
+            {
+                point.Value = 'a';
+                start = point;
+            }
+            else if (point.Value == 'E')
+            {
+                point.Value = 'z';
+                end = point;
+            }
+        }
+
+        return (start ?? throw new SolvingException(), end ?? throw new SolvingException());
+    }
+
+    private static List<Point> AddPossibleDestinationSquares(List<Point> input, int maxX, int maxY)
+    {
+        foreach (var point in input)
+        {
+            foreach (var neighbour in new[] { point.Move(Direction.Up), point.Move(Direction.Down), point.Move(Direction.Left), point.Move(Direction.Right) })
+            {
+                if (neighbour.X >= 0 && neighbour.Y >= 0 && neighbour.X < maxX && neighbour.Y < maxY)
+                {
+                    var realNeighbour = input[(neighbour.Y * maxX) + neighbour.X];
+
+                    Debug.Assert(realNeighbour.X == neighbour.X && realNeighbour.Y == neighbour.Y);
+
+                    if (realNeighbour.Value - 1 <= point.Value)
+                    {
+                        point.PossibleDestinationSquares.Add(realNeighbour);
+                    }
+                }
+            }
+        }
+
+        return input;
     }
 }
