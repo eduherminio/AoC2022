@@ -24,8 +24,6 @@ public partial class Day_11 : BaseDay
     [GeneratedRegex($@"If false: throw to monkey (?<{nameof(_falseTestResultRegex)}>\d+)", RegexOptions.ExplicitCapture | RegexOptions.Compiled)]
     private static partial Regex _falseTestResultRegex();
 
-    private readonly List<Monkey> _input;
-
     public override ValueTask<string> Solve_1()
     {
         var input = ParseInput().ToList();
