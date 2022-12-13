@@ -1,5 +1,4 @@
-﻿using MoreLinq.Extensions;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Direction = SheepTools.Model.Direction;
 
 namespace AoC_2022;
@@ -13,40 +12,37 @@ public class Day_12 : BaseDay
 
     private readonly Point _start;
     private readonly Point _end;
+    private readonly string[] _lines;
     private readonly List<Point> _input;
 
     public Day_12()
     {
-        var lines = File.ReadAllLines(InputFilePath);
-        _input = ParsePoints(lines).ToList();
+        _lines = File.ReadAllLines(InputFilePath);
+        _input = ParsePoints(_lines).ToList();
 
         (_start, _end) = ExtractStartAndEnd(_input);
-        _input = AddPossibleDestinationSquares(_input, lines[0].Length, lines.Length);
+        _input = AddPossibleDestinationSquares(_input, _lines[0].Length, _lines.Length);
     }
 
     public override ValueTask<string> Solve_1()
     {
-        return new($"{Dijkstra(_input, _start, _end)}");
+        var input = AddPossibleDestinationSquares(_input, _lines[0].Length, _lines.Length);
+        var distances = Dijkstra(input, _start, _end);
+
+        return new($"{distances[_end]}");
     }
 
     public override ValueTask<string> Solve_2()
     {
-        var minDistace = int.MaxValue;
+        var input = AddOppositePossibleDestinationSquares(_input, _lines[0].Length, _lines.Length);
 
-        foreach (var newStart in _input.Where(p => p.Value == 'a'))
-        {
-            var distance = Dijkstra(_input, newStart, _end, minDistace);
+        var distances = Dijkstra(input, _end);
+        var minDistance = distances.Where(pair => pair.Key.Value == 'a').Min(pair => pair.Value);
 
-            if (distance < minDistace && distance > 0)
-            {
-                minDistace = distance;
-            }
-        }
-
-        return new($"{minDistace}");
+        return new($"{minDistance}");
     }
 
-    private static int Dijkstra(List<Point> input, Point start, Point end, int? maxDistance = null)
+    private static Dictionary<Point, int> Dijkstra(List<Point> input, Point start, Point? end = null)
     {
         PriorityQueue<Point, int> priorityQueue = new(input.Count);
         Dictionary<Point, Point?> previousNode = new(input.Count);
@@ -54,12 +50,13 @@ public class Day_12 : BaseDay
         {
             [start] = 0
         };
+        const int maxDistance = 1_000_000_000;  // safe value that can be safely increased with node-neighbour distance
 
         foreach (var point in input)
         {
             if (point != start)
             {
-                distanceToSource[point] = int.MaxValue;
+                distanceToSource[point] = maxDistance;
                 previousNode[point] = null;
             }
 
@@ -79,19 +76,13 @@ public class Day_12 : BaseDay
 
                     if (neighbour == end)
                     {
-                        return distance;
-                    }
-
-                    // Extra optimization, in case there's a way longer path
-                    if (distance >= maxDistance)
-                    {
-                        return -1;
+                        return distanceToSource;
                     }
                 }
             }
         }
 
-        throw new SolvingException();
+        return distanceToSource;
     }
 
     private static IEnumerable<Point> ParsePoints(string[] lines)
@@ -138,6 +129,7 @@ public class Day_12 : BaseDay
     {
         foreach (var point in input)
         {
+            point.PossibleDestinationSquares.Clear();
             foreach (var neighbour in new[] { point.Move(Direction.Up), point.Move(Direction.Down), point.Move(Direction.Left), point.Move(Direction.Right) })
             {
                 if (neighbour.X >= 0 && neighbour.Y >= 0 && neighbour.X < maxX && neighbour.Y < maxY)
@@ -147,6 +139,30 @@ public class Day_12 : BaseDay
                     Debug.Assert(realNeighbour.X == neighbour.X && realNeighbour.Y == neighbour.Y);
 
                     if (realNeighbour.Value - 1 <= point.Value)
+                    {
+                        point.PossibleDestinationSquares.Add(realNeighbour);
+                    }
+                }
+            }
+        }
+
+        return input;
+    }
+
+    private static List<Point> AddOppositePossibleDestinationSquares(List<Point> input, int maxX, int maxY)
+    {
+        foreach (var point in input)
+        {
+            point.PossibleDestinationSquares.Clear();
+            foreach (var neighbour in new[] { point.Move(Direction.Up), point.Move(Direction.Down), point.Move(Direction.Left), point.Move(Direction.Right) })
+            {
+                if (neighbour.X >= 0 && neighbour.Y >= 0 && neighbour.X < maxX && neighbour.Y < maxY)
+                {
+                    var realNeighbour = input[(neighbour.Y * maxX) + neighbour.X];
+
+                    Debug.Assert(realNeighbour.X == neighbour.X && realNeighbour.Y == neighbour.Y);
+
+                    if (realNeighbour.Value + 1 >= point.Value)
                     {
                         point.PossibleDestinationSquares.Add(realNeighbour);
                     }
