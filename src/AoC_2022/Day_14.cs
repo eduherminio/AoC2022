@@ -1,15 +1,13 @@
 ﻿using SheepTools.Model;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace AoC_2022;
 
 public class Day_14 : BaseDay
 {
-    private sealed record Point(char Value, int X, int Y) : SheepTools.Model.IntPoint(X, Y)
+    private sealed record Point(char Value, int X, int Y) : IntPoint(X, Y)
     {
-        public int State { get; set; }
+        private int _state;
 
         public new Point Move(Direction direction, int distance = 1)
         {
@@ -48,7 +46,7 @@ public class Day_14 : BaseDay
 
         public Point GenerateAlternative()
         {
-            var valueToReturn = State switch
+            var valueToReturn = _state switch
             {
                 0 => Move(Direction.Up),
                 1 => Move(Direction.Up).Move(Direction.Left),
@@ -57,9 +55,11 @@ public class Day_14 : BaseDay
                 _ => throw new SolvingException(),
             };
 
-            ++State;
+            ++_state;
             return valueToReturn;
         }
+
+        public void ResetState() => _state = 0;
 
         public bool Equals(Point? other)
         {
@@ -76,93 +76,11 @@ public class Day_14 : BaseDay
 
     public Day_14()
     {
-        _input = ParsedInput();
+        _input = ParseInput();
     }
 
     public override ValueTask<string> Solve_1()
     {
-        Point UpdateSandGrain(Point originalSandGrain)
-        {
-            var newSandGrain = originalSandGrain.GenerateAlternative();
-            if (originalSandGrain == newSandGrain)
-            {
-                return originalSandGrain;
-            }
-
-            if (_input.TryGetValue(newSandGrain, out var existingPoint))
-            {
-                var existingValue = existingPoint.Value;
-                if (existingValue == '#' || existingValue == 'o')
-                {
-                    return UpdateSandGrain(originalSandGrain);
-                }
-            }
-
-            return newSandGrain;
-        }
-
-        var generator = new Point('o', 500, 0);
-        _input.Add(generator);
-        var sand = new HashSet<Point>();
-
-        var maxY = _input.Max(k => k.Y) + 2;
-        while (true)
-        {
-            bool isExit = false;
-            var existingSandGrain = new Point(generator.Value, generator.X, generator.Y);
-            do
-            {
-                var newSandGrain = UpdateSandGrain(existingSandGrain);
-
-                if (newSandGrain == existingSandGrain)
-                {
-                    isExit = true;
-                    break;
-                }
-                else
-                {
-                    existingSandGrain = newSandGrain;
-                    existingSandGrain.State = 0;
-                }
-            } while (existingSandGrain.Y <= maxY);
-
-            if (!isExit)
-            {
-                break;
-            }
-            _input.Add(existingSandGrain);
-            sand.Add(existingSandGrain);
-
-            //Print(_input);
-        }
-
-        return new($"{sand.Count}");
-    }
-
-    public override ValueTask<string> Solve_2()
-    {
-        _input = ParsedInput();
-
-        Point UpdateSandGrain(Point originalSandGrain)
-        {
-            var newSandGrain = originalSandGrain.GenerateAlternative();
-            if (originalSandGrain == newSandGrain)
-            {
-                return originalSandGrain;
-            }
-
-            if (_input.TryGetValue(newSandGrain, out var existingPoint))
-            {
-                var existingValue = existingPoint.Value;
-                if (existingValue == '#' || existingValue == 'o')
-                {
-                    return UpdateSandGrain(originalSandGrain);
-                }
-            }
-
-            return newSandGrain;
-        }
-
         var generator = new Point('o', 500, 0);
         _input.Add(generator);
         var sand = new HashSet<Point>();
@@ -184,7 +102,48 @@ public class Day_14 : BaseDay
                 else
                 {
                     existingSandGrain = newSandGrain;
-                    existingSandGrain.State = 0;
+                    existingSandGrain.ResetState();
+                }
+            } while (existingSandGrain.Y <= maxY);
+
+            if (!isExit)
+            {
+                break;
+            }
+            _input.Add(existingSandGrain);
+            sand.Add(existingSandGrain);
+
+            //Print(_input);
+        }
+
+        return new($"{sand.Count}");
+    }
+
+    public override ValueTask<string> Solve_2()
+    {
+        _input = ParseInput();
+
+        var generator = new Point('o', 500, 0);
+        _input.Add(generator);
+        var sand = new HashSet<Point>();
+
+        var maxY = _input.Max(k => k.Y);
+        Point? existingSandGrain = default;
+        do
+        {
+            existingSandGrain = new Point(generator.Value, generator.X, generator.Y);
+            do
+            {
+                var newSandGrain = UpdateSandGrain(existingSandGrain);
+
+                if (newSandGrain == existingSandGrain)
+                {
+                    break;
+                }
+                else
+                {
+                    existingSandGrain = newSandGrain;
+                    existingSandGrain.ResetState();
                 }
             } while (existingSandGrain.Y <= maxY);
 
@@ -192,18 +151,32 @@ public class Day_14 : BaseDay
             sand.Add(existingSandGrain);
 
             //Print(_input);
-
-            if (existingSandGrain == generator)
-            {
-                break;
-            }
-        }
+        } while (existingSandGrain != generator);
 
         return new($"{sand.Count}");
     }
 
+    private Point UpdateSandGrain(Point originalSandGrain)
+    {
+        var newSandGrain = originalSandGrain.GenerateAlternative();
+        if (originalSandGrain == newSandGrain)
+        {
+            return originalSandGrain;
+        }
 
-    private HashSet<Point>? ParsedInput()
+        if (_input.TryGetValue(newSandGrain, out var existingPoint))
+        {
+            var existingValue = existingPoint.Value;
+            if (existingValue == '#' || existingValue == 'o')
+            {
+                return UpdateSandGrain(originalSandGrain);
+            }
+        }
+
+        return newSandGrain;
+    }
+
+    private HashSet<Point> ParseInput()
     {
         var rocks = new HashSet<Point>();
 
