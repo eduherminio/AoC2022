@@ -29,16 +29,19 @@ public partial class Day_16 : BaseDay
 
         public int ReleasePressure { get; private set; }
 
-        public List<Node> Nodes { get; set; }
+        public List<Node> Nodes { get; private set; }
 
-        private HashSet<string> _openNodes { get; set; }
+        public HashSet<string> OpenNodes { get; private set; }
+
+        public Dictionary<string, int> HighestValueDictionary { get; private set; }
 
         public Path(Node initialNode, int timeLeft)
         {
             TimeLeft = timeLeft;
             ReleasePressure = 0;
             Nodes = new(timeLeft) { initialNode };
-            _openNodes = new();
+            HighestValueDictionary = new() { [initialNode.Id] = 0 };
+            OpenNodes = new();
         }
 
         public Path(Path path)
@@ -46,7 +49,8 @@ public partial class Day_16 : BaseDay
             ReleasePressure = path.ReleasePressure;
             TimeLeft = path.TimeLeft;
             Nodes = path.Nodes.ToList();
-            _openNodes = new(path._openNodes);
+            OpenNodes = new(path.OpenNodes);
+            HighestValueDictionary = new(path.HighestValueDictionary);
         }
 
         /// <summary>
@@ -59,20 +63,19 @@ public partial class Day_16 : BaseDay
             ReleasePressure = path.ReleasePressure;
             TimeLeft = path.TimeLeft;
             Nodes = path.Nodes.ToList();
-            _openNodes = new(path._openNodes);
+            OpenNodes = new(path.OpenNodes);
+            HighestValueDictionary = new(path.HighestValueDictionary);
             GotoNode(node);
         }
 
-        public List<Node> Expand() => Nodes.Last().Children;
-
-        public List<Node> Expand(Dictionary<string, int> previousHighestValues)
+        public List<Node> Expand()
         {
             var result = new List<Node>();
             foreach (var childCandidate in Nodes.Last().Children)
             {
                 if (Nodes.Contains(childCandidate))
                 {
-                    if (ReleasePressure > previousHighestValues[childCandidate.Id])
+                    if (ReleasePressure > HighestValueDictionary[childCandidate.Id])
                     {
                         result.Add(childCandidate);
                     }
@@ -90,17 +93,19 @@ public partial class Day_16 : BaseDay
         {
             --TimeLeft;
             Nodes.Add(node);
+            HighestValueDictionary[node.Id] = ReleasePressure;
         }
 
         public bool ShouldBeConsideredForOpening() => Nodes.Last().Value > 0;
 
-        public bool IsOpen() => _openNodes.Contains(Nodes.Last().Id);
+        public bool IsOpen() => OpenNodes.Contains(Nodes.Last().Id);
 
         public void OpenValve()
         {
             --TimeLeft;
-            _openNodes.Add(Nodes.Last().Id);
+            OpenNodes.Add(Nodes.Last().Id);
             ReleasePressure += TimeLeft * Nodes.Last().Value;
+            HighestValueDictionary[Nodes.Last().Id] = ReleasePressure;
         }
     }
 
@@ -117,7 +122,6 @@ public partial class Day_16 : BaseDay
     public override ValueTask<string> Solve_1()
     {
         List<(int ReleasedPressure, Path Path)> solutions = new();
-        Dictionary<string, int> highestValueDictionary = new();
 
         Stack<Path> stack = new();
         stack.Push(new(_input[0], 30));
@@ -141,23 +145,12 @@ public partial class Day_16 : BaseDay
                 stack.Push(path);
             }
 
-            foreach (var child in current.Expand(highestValueDictionary))
+            foreach (var child in current.Expand())
             {
                 var path = new Path(current, child);
                 stack.Push(path);
             }
 
-            if (highestValueDictionary.TryGetValue(current.Nodes.Last().Id, out var existingHighestValue))
-            {
-                if (current.ReleasePressure > existingHighestValue)
-                {
-                    highestValueDictionary[current.Nodes.Last().Id] = current.ReleasePressure;
-                }
-            }
-            else
-            {
-                highestValueDictionary[current.Nodes.Last().Id] = current.ReleasePressure;
-            }
             ++index;
 
             if (index % 250_000 == 0)
