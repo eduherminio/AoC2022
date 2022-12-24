@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace AoC_2022;
 
@@ -11,8 +12,14 @@ public partial class Day_15 : BaseDay
     {
         public bool Equals(Point? other)
         {
-            return base.Equals(other);
+            if (other is null)
+            {
+                return false;
+            }
+
+            return X == other.X && Y == other.Y;
         }
+
 
         public override int GetHashCode()
         {
@@ -24,46 +31,112 @@ public partial class Day_15 : BaseDay
 
     public Day_15()
     {
-        _input = ParseInput().ToList();
+        _input = ParseInput();
     }
 
     public override ValueTask<string> Solve_1()
     {
+        const int requestedY = 2_000_000;
         HashSet<Point> notBeacons = new();
         foreach (var sensor in _input)
         {
             var distance = (int)sensor.ManhattanDistance(sensor.ClosestBeacon ?? throw new SolvingException());
-            foreach (var x in Enumerable.Range(sensor.X - distance, 2 * distance))
+            foreach (var y in Enumerable.Range(sensor.Y - distance, 2 * distance))
             {
-                foreach (var y in Enumerable.Range(sensor.Y - distance, 2 * distance))
+                if (y == requestedY)
                 {
-                    var candidatePoint = new Point('#', x, y);
-                    if (sensor.ManhattanDistance(candidatePoint) <= distance)
+                    foreach (var x in Enumerable.Range(sensor.X - distance, 2 * distance))
                     {
-                        notBeacons.Add(candidatePoint);
+                        var candidatePoint = new Point('#', x, y);
+                        if (sensor.ManhattanDistance(candidatePoint) <= distance)
+                        {
+                            notBeacons.Add(candidatePoint);
+                        }
                     }
                 }
             }
             //Print(notBeacons, _input);
         }
 
-        var discardedBeacons = notBeacons.Except(_input.Select(s => s.ClosestBeacon));
-        int result = discardedBeacons.Count(p => p.Y == 10);
+        var discardedBeacons = notBeacons.Except(_input.Select(s => s.ClosestBeacon!));
+        int result = discardedBeacons.Count(p => p.Y == requestedY);
 
         return new($"{result}");
     }
 
     public override ValueTask<string> Solve_2()
     {
-        int result = 0;
+        const int upperLimit = 4_000_000;
 
-        return new($"{result}");
+        //var beaconsAndSensors = _input.SelectMany(i => new[] { i, i.ClosestBeacon! }).ToHashSet();
+        //var inputPair = _input.Select(sensor =>
+        //{
+        //    var distance = (int)sensor.ManhattanDistance(sensor.ClosestBeacon ?? throw new SolvingException());
+        //    return (sensor, distance);
+        //});
+
+        //for (int y = 0; y < upperLimit + 1; ++y)
+        //{
+        //    Console.WriteLine(y);
+        //    for (int x = 0; x < upperLimit + 1; ++x)
+        //    {
+        //        var p = new Point('#', x, y);
+        //        if (!inputPair.Any(pair => pair.sensor.ManhattanDistance(p) <= pair.distance) && !beaconsAndSensors.Contains(p))
+        //        {
+        //            return new($"{x * 4_000_000L + y}");
+        //        }
+        //    }
+        //}
+
+        //throw new SolvingException();
+
+        //System.Collections.Concurrent.hash
+        HashSet<Point> notBeacons = new(_input.SelectMany(i => new[] { i, i.ClosestBeacon! }));
+        foreach (var sensor in _input)
+        {
+            var distance = (int)sensor.ManhattanDistance(sensor.ClosestBeacon ?? throw new SolvingException());
+            var minY = Math.Clamp(sensor.Y - distance, 0, upperLimit);
+            var maxY = Math.Clamp(sensor.Y + distance, 0, upperLimit);
+            for (int y = minY; y <= maxY; ++y)
+            {
+                Console.WriteLine(y);
+                var minX = Math.Clamp(sensor.X - distance, 0, upperLimit);
+                var maxX = Math.Clamp(sensor.X + distance, 0, upperLimit);
+                for (int x = minX; x <= maxX; ++x)
+                {
+                    var candidatePoint = new Point('#', x, y);
+                    if (sensor.ManhattanDistance(candidatePoint) <= distance)
+                    {
+                        notBeacons.Add(candidatePoint);
+                        //const long limit = (long)upperLimit * upperLimit - 1;
+                        //if (notBeacons.LongCount() >= limit)
+                        //{
+                        //    break;
+                        //}
+                        //Console.WriteLine(notBeacons.Count);
+                    }
+                }
+            }
+        }
+
+        //Print(notBeacons, _input);
+        for (int y = 0; y < upperLimit; ++y)
+        {
+            for (int x = 0; x < upperLimit; ++x)
+            {
+                if (notBeacons.Add(new Point('#', x, y)))
+                {
+                    return new($"{x * 4_000_000L + y}");
+                }
+            }
+        }
+
+        throw new SolvingException();
     }
-
 
     private static void Print(IEnumerable<Point> notBeacons, IEnumerable<Point> input)
     {
-        var total = new HashSet<Point>(input.SelectMany(i => new[] { i, i.ClosestBeacon }).Concat(notBeacons));
+        var total = new HashSet<Point>(input.SelectMany(i => new[] { i, i.ClosestBeacon! }).Concat(notBeacons));
         Console.ReadKey();
         Console.Clear();
         var maxY = total.Max(k => k.Y) + 2;
@@ -95,12 +168,11 @@ public partial class Day_15 : BaseDay
         Console.WriteLine("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
     }
 
-    private IEnumerable<Point> ParseInput()
+    private List<Point> ParseInput()
     {
-        foreach (var match in ParsingRegex().Matches(File.ReadAllText(InputFilePath)).Cast<Match>())
-        {
-            yield return new Point('S', int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value),
-                new Point('B', int.Parse(match.Groups[3].Value), int.Parse(match.Groups[4].Value)));
-        }
+        return ParsingRegex().Matches(File.ReadAllText(InputFilePath)).Cast<Match>()
+            .Select(match => new Point('S', int.Parse(match.Groups[1].Value), int.Parse(match.Groups[2].Value),
+                        new Point('B', int.Parse(match.Groups[3].Value), int.Parse(match.Groups[4].Value))))
+            .ToList();
     }
 }
