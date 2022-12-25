@@ -119,17 +119,21 @@ public partial class Day_16 : BaseDay
 
     public override ValueTask<string> Solve_1()
     {
+        var valvesThatReleasePressure = _input.Count(v => v.Value > 0);
+
         List<(int ReleasedPressure, Path Path)> solutions = new();
 
-        Stack<Path> stack = new();
-        stack.Push(new(_input[0], 30));
+        Queue<Path> stack = new();
+        stack.Enqueue(new(_input[0], 30));
 
         int index = 0;
         var sw = new System.Diagnostics.Stopwatch();
         sw.Start();
+
+        int maxPressure = int.MinValue;
         while (stack.Count > 0)
         {
-            var current = stack.Pop();
+            var current = stack.Dequeue();
             if (current.TimeLeft == 0)
             {
                 solutions.Add((current.ReleasePressure, current));
@@ -140,21 +144,33 @@ public partial class Day_16 : BaseDay
             {
                 var path = new Path(current);
                 path.OpenValve();
-                stack.Push(path);
+                stack.Enqueue(path);
+            }
+
+            if (current.OpenNodes.Count == valvesThatReleasePressure)
+            {
+                continue;
             }
 
             foreach (var child in current.Expand())
             {
                 var path = new Path(current, child);
-                stack.Push(path);
+                stack.Enqueue(path);
             }
 
             ++index;
 
-            if (index % 250_000 == 0)
+            if (current.ReleasePressure > maxPressure)
+            {
+                maxPressure = current.ReleasePressure;
+                Console.WriteLine($"\tMax release pressure: {current.ReleasePressure}");
+            }
+
+            if (index % 1_000_000 == 0)
             {
                 Console.WriteLine($"\tTime: {0.001 * sw.ElapsedMilliseconds:F3}");
                 Console.WriteLine($"\tIndex: {index}, stack: {stack.Count}, currentTimeLeft: {current.TimeLeft}");
+                Console.WriteLine($"\tCurrent release pressure: {current.ReleasePressure}");
             }
         }
 
@@ -169,55 +185,6 @@ public partial class Day_16 : BaseDay
 
         return new($"{result}");
     }
-
-    //public static ICollection<Node> DepthFirst(IEnumerable<Node> allNodes, Func<Node, bool> isSuccess)
-    //{
-    //    Stack<Node> stack = new(new[] { allNodes.First() });
-    //    Dictionary<string, Node> expanded = new();              // Node.Id as Key
-
-    //    Node current = stack.Peek();
-
-    //    int index = 0;
-
-    //    //var sw = new System.Diagnostics.Stopwatch();
-    //    //sw.Start();
-    //    while (stack.Count > 0)
-    //    {
-    //        current = stack.Pop();
-    //        expanded.Add(current.Id, current);
-
-    //        if (isSuccess(current))
-    //        {
-    //            break;
-    //        }
-
-    //        foreach (var child in current.Children)
-    //        {
-    //            if (expanded.ContainsKey(child.Id))
-    //            {
-    //                stack.Push(child);
-    //            }
-    //        }
-
-    //        ++index;
-
-    //        //if (index % 250_000 == 0)
-    //        //{
-    //        //    Console.WriteLine($"\tTime: {0.001 * sw.ElapsedMilliseconds:F3}");
-    //        //    Console.WriteLine($"\tIndex: {index}, queue: {queue.Count}");
-    //        //}
-    //    }
-
-    //    List<Node> solution = new();
-    //    var node = current;
-    //    while (node.ParentKey != string.Empty)
-    //    {
-    //        solution.Add(node);
-    //        node = expanded[current.ParentKey];
-    //    }
-
-    //    return solution;
-    //}
 
     private IEnumerable<Node> ParseInput()
     {
