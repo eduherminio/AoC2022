@@ -29,26 +29,30 @@ public partial class Day_15 : BaseDay
 
     public override ValueTask<string> Solve_1()
     {
+        const int requestedY = 2_000_000;
         HashSet<Point> notBeacons = new();
         foreach (var sensor in _input)
         {
             var distance = (int)sensor.ManhattanDistance(sensor.ClosestBeacon ?? throw new SolvingException());
-            foreach (var x in Enumerable.Range(sensor.X - distance, 2 * distance))
+            foreach (var y in Enumerable.Range(sensor.Y - distance, 2 * distance))
             {
-                foreach (var y in Enumerable.Range(sensor.Y - distance, 2 * distance))
+                if (y == requestedY)
                 {
-                    var candidatePoint = new Point('#', x, y);
-                    if (sensor.ManhattanDistance(candidatePoint) <= distance)
+                    foreach (var x in Enumerable.Range(sensor.X - distance, 2 * distance))
                     {
-                        notBeacons.Add(candidatePoint);
+                        var candidatePoint = new Point('#', x, y);
+                        if (sensor.ManhattanDistance(candidatePoint) <= distance)
+                        {
+                            notBeacons.Add(candidatePoint);
+                        }
                     }
                 }
             }
             //Print(notBeacons, _input);
         }
 
-        var discardedBeacons = notBeacons.Except(_input.Select(s => s.ClosestBeacon));
-        int result = discardedBeacons.Count(p => p.Y == 10);
+        var discardedBeacons = notBeacons.Except(_input.Select(s => s.ClosestBeacon!));
+        int result = discardedBeacons.Count(p => p.Y == requestedY);
 
         return new($"{result}");
     }
@@ -63,7 +67,7 @@ public partial class Day_15 : BaseDay
 
     private static void Print(IEnumerable<Point> notBeacons, IEnumerable<Point> input)
     {
-        var total = new HashSet<Point>(input.SelectMany(i => new[] { i, i.ClosestBeacon }).Concat(notBeacons));
+        var total = new HashSet<Point>(input.SelectMany(i => new[] { i, i.ClosestBeacon! }).Concat(notBeacons));
         Console.ReadKey();
         Console.Clear();
         var maxY = total.Max(k => k.Y) + 2;
