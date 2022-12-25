@@ -121,11 +121,11 @@ public partial class Day_16 : BaseDay
         List<(int ReleasedPressure, Path Path)> solutions = new();
 
         Queue<Path> stack = new();
-        stack.Enqueue(new(_input[0], 30));
+        stack.Enqueue(new(_input.First(n => n.Id == "AA"), 30));
 
-        int index = 0;
-        var sw = new System.Diagnostics.Stopwatch();
-        sw.Start();
+        //int index = 0;
+        //var sw = new System.Diagnostics.Stopwatch();
+        //sw.Start();
 
         int maxPressure = int.MinValue;
         while (stack.Count > 0)
@@ -148,21 +148,15 @@ public partial class Day_16 : BaseDay
             {
                 maxPressure = current.ReleasePressure;
                 solutions.Add((current.ReleasePressure, current));
-                Console.WriteLine($"\t\tMax release pressure: {current.ReleasePressure}");
+                //Console.WriteLine($"\t\tMax release pressure: {current.ReleasePressure}");
             }
 
-            //if (current.OpenNodes.Count == valvesThatReleasePressure.Count)
-            //{
-            //    solutions.Add((current.ReleasePressure, current));
-            //    continue;
-            //}
 
             var valvesLeft = valvesThatReleasePressure.ExceptBy(current.OpenNodes, node => node.Id).Except(new[] { current.Nodes.Last().Node }).ToList();
             var potentialReleaseLeft = current.ReleasePressure;
             for (int i = 0; i < valvesLeft.Count; ++i)
             {
                 potentialReleaseLeft += valvesLeft[i].Value * (current.TimeLeft - 2 * i);
-                //potentialReleaseLeft += valvesLeft[i].Value * (current.TimeLeft);
             }
 
             if (potentialReleaseLeft < maxPressure)
@@ -177,21 +171,14 @@ public partial class Day_16 : BaseDay
                 stack.Enqueue(path);
             }
 
-            ++index;
+            //++index;
 
-            if (current.ReleasePressure > maxPressure)
-            {
-                maxPressure = current.ReleasePressure;
-                solutions.Add((current.ReleasePressure, current));
-                Console.WriteLine($"\tMax release pressure: {current.ReleasePressure}");
-            }
-
-            if (index % 1_000_000 == 0)
-            {
-                Console.WriteLine($"\tTime: {0.001 * sw.ElapsedMilliseconds:F3}");
-                Console.WriteLine($"\tIndex: {index}, stack: {stack.Count}, currentTimeLeft: {current.TimeLeft}");
-                Console.WriteLine($"\tCurrent release pressure: {current.ReleasePressure}");
-            }
+            //if (index % 1_000_000 == 0)
+            //{
+            //    Console.WriteLine($"\tTime: {0.001 * sw.ElapsedMilliseconds:F3}");
+            //    Console.WriteLine($"\tIndex: {index}, stack: {stack.Count}, currentTimeLeft: {current.TimeLeft}");
+            //    Console.WriteLine($"\tCurrent release pressure: {current.ReleasePressure}");
+            //}
         }
 
         var result = solutions.OrderByDescending(pair => pair.ReleasedPressure).First().ReleasedPressure;
