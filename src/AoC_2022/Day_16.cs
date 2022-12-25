@@ -1,7 +1,4 @@
-﻿
-using SheepTools.Extensions;
-using SheepTools.Model;
-using System.Collections.Specialized;
+﻿using SheepTools.Model;
 using System.Text.RegularExpressions;
 
 namespace AoC_2022;
@@ -119,7 +116,7 @@ public partial class Day_16 : BaseDay
 
     public override ValueTask<string> Solve_1()
     {
-        var valvesThatReleasePressure = _input.Count(v => v.Value > 0);
+        var valvesThatReleasePressure = _input.Where(v => v.Value > 0).OrderByDescending(n => n.Value).ToList();
 
         List<(int ReleasedPressure, Path Path)> solutions = new();
 
@@ -147,8 +144,30 @@ public partial class Day_16 : BaseDay
                 stack.Enqueue(path);
             }
 
-            if (current.OpenNodes.Count == valvesThatReleasePressure)
+            if (current.ReleasePressure > maxPressure)
             {
+                maxPressure = current.ReleasePressure;
+                solutions.Add((current.ReleasePressure, current));
+                Console.WriteLine($"\t\tMax release pressure: {current.ReleasePressure}");
+            }
+
+            //if (current.OpenNodes.Count == valvesThatReleasePressure.Count)
+            //{
+            //    solutions.Add((current.ReleasePressure, current));
+            //    continue;
+            //}
+
+            var valvesLeft = valvesThatReleasePressure.ExceptBy(current.OpenNodes, node => node.Id).Except(new[] { current.Nodes.Last().Node }).ToList();
+            var potentialReleaseLeft = current.ReleasePressure;
+            for (int i = 0; i < valvesLeft.Count; ++i)
+            {
+                potentialReleaseLeft += valvesLeft[i].Value * (current.TimeLeft - 2 * i);
+                //potentialReleaseLeft += valvesLeft[i].Value * (current.TimeLeft);
+            }
+
+            if (potentialReleaseLeft < maxPressure)
+            {
+                solutions.Add((current.ReleasePressure, current));
                 continue;
             }
 
@@ -163,6 +182,7 @@ public partial class Day_16 : BaseDay
             if (current.ReleasePressure > maxPressure)
             {
                 maxPressure = current.ReleasePressure;
+                solutions.Add((current.ReleasePressure, current));
                 Console.WriteLine($"\tMax release pressure: {current.ReleasePressure}");
             }
 
