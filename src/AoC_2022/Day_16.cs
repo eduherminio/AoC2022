@@ -29,18 +29,15 @@ public partial class Day_16 : BaseDay
 
         public int ReleasePressure { get; private set; }
 
-        public List<Node> Nodes { get; private set; }
+        public List<(Node Node, int ReleasePressure)> Nodes { get; private set; }
 
         public HashSet<string> OpenNodes { get; private set; }
-
-        public Dictionary<string, int> HighestValueDictionary { get; private set; }
 
         public Path(Node initialNode, int timeLeft)
         {
             TimeLeft = timeLeft;
             ReleasePressure = 0;
-            Nodes = new(timeLeft) { initialNode };
-            HighestValueDictionary = new() { [initialNode.Id] = 0 };
+            Nodes = new(timeLeft) { (initialNode, ReleasePressure) };
             OpenNodes = new();
         }
 
@@ -50,7 +47,6 @@ public partial class Day_16 : BaseDay
             TimeLeft = path.TimeLeft;
             Nodes = path.Nodes.ToList();
             OpenNodes = new(path.OpenNodes);
-            HighestValueDictionary = new(path.HighestValueDictionary);
         }
 
         /// <summary>
@@ -64,18 +60,18 @@ public partial class Day_16 : BaseDay
             TimeLeft = path.TimeLeft;
             Nodes = path.Nodes.ToList();
             OpenNodes = new(path.OpenNodes);
-            HighestValueDictionary = new(path.HighestValueDictionary);
             GotoNode(node);
         }
 
         public List<Node> Expand()
         {
             var result = new List<Node>();
-            foreach (var childCandidate in Nodes.Last().Children)
+            foreach (var childCandidate in Nodes.Last().Node.Children)
             {
-                if (Nodes.Contains(childCandidate))
+                var previousNodeVisit = Nodes.LastOrDefault(pair => pair.Node == childCandidate);
+                if (previousNodeVisit != default)
                 {
-                    if (ReleasePressure > HighestValueDictionary[childCandidate.Id])
+                    if (ReleasePressure > previousNodeVisit.ReleasePressure)
                     {
                         result.Add(childCandidate);
                     }
@@ -92,20 +88,22 @@ public partial class Day_16 : BaseDay
         public void GotoNode(Node node)
         {
             --TimeLeft;
-            Nodes.Add(node);
-            HighestValueDictionary[node.Id] = ReleasePressure;
+            Nodes.Add((node, ReleasePressure));
         }
 
-        public bool ShouldBeConsideredForOpening() => Nodes.Last().Value > 0;
+        public bool ShouldBeConsideredForOpening() => Nodes.Last().Node.Value > 0;
 
-        public bool IsOpen() => OpenNodes.Contains(Nodes.Last().Id);
+        public bool IsOpen() => OpenNodes.Contains(Nodes.Last().Node.Id);
 
         public void OpenValve()
         {
             --TimeLeft;
-            OpenNodes.Add(Nodes.Last().Id);
-            ReleasePressure += TimeLeft * Nodes.Last().Value;
-            HighestValueDictionary[Nodes.Last().Id] = ReleasePressure;
+            OpenNodes.Add(Nodes.Last().Node.Id);
+            ReleasePressure += TimeLeft * Nodes.Last().Node.Value;
+
+            var node = Nodes.Last().Node;
+            Nodes.RemoveAt(Nodes.Count - 1);
+            Nodes.Add((node, ReleasePressure));
         }
     }
 
