@@ -1,4 +1,7 @@
-﻿using SheepTools.Model;
+﻿using SheepTools;
+using SheepTools.Model;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 
 namespace AoC_2022;
@@ -319,9 +322,9 @@ public partial class Day_16 : BaseDay
         Queue<DoublePath> stack = new();
         stack.Enqueue(new(_input.First(n => n.Id == "AA"), 26, 26));
 
-        int index = 0;
-        var sw = new System.Diagnostics.Stopwatch();
-        sw.Start();
+        //int index = 0;
+        //var sw = new System.Diagnostics.Stopwatch();
+        //sw.Start();
 
         int maxPressure = int.MinValue;
         while (stack.Count > 0)
@@ -333,7 +336,6 @@ public partial class Day_16 : BaseDay
                 solutions.Add((current.TotalReleasePressure, current));
                 humanPathsToAdd.Add(current);
                 goto elephants;
-                //continue;
             }
 
             if (current.ShouldBeConsideredForOpening() && !current.IsOpen())
@@ -347,46 +349,44 @@ public partial class Day_16 : BaseDay
             {
                 maxPressure = current.TotalReleasePressure;
                 solutions.Add((current.TotalReleasePressure, current));
-                Console.WriteLine($"\t\tMax release pressure: {current.TotalReleasePressure}");
+                //Console.WriteLine($"\t\tMax release pressure: {current.TotalReleasePressure}");
             }
 
             var valvesLeft = valvesThatReleasePressure.ExceptBy(current.OpenNodes, node => node.Id).Except(new[] { current.Nodes.Last().Node }).ToList();
             var potentialReleaseLeft = current.TotalReleasePressure;
-            for (int i = 0; i < valvesLeft.Count; ++i)
+
+            for (int i = 0; i < valvesLeft.Count / 2; i += 2)
             {
                 var distance = distances[current.Nodes.Last().Node][valvesLeft[i]];
                 var elephantDistance = distances[current.ElephantNodes.Last().Node][valvesLeft[i]];
 
-                var min = new[] { distance, elephantDistance }.Min();
-                potentialReleaseLeft += valvesLeft[i].Value * (current.TimeLeft - i - min);
+                if (distance > elephantDistance && i + 1 < valvesLeft.Count)
+                {
+                    distance = distances[current.Nodes.Last().Node][valvesLeft[i + 1]];
+
+                    if (distance < current.TimeLeft - i)
+                    {
+                        potentialReleaseLeft += valvesLeft[i + 1].Value * (current.TimeLeft - i - 1 - distance);
+                    }
+                    if (distance < current.ElephantTimeLeft - i)
+                    {
+                        potentialReleaseLeft += valvesLeft[i].Value * (current.ElephantTimeLeft - i - 1 - elephantDistance);
+                    }
+                }
+                else if (i + 1 < valvesLeft.Count)
+                {
+                    elephantDistance = distances[current.ElephantNodes.Last().Node][valvesLeft[i + 1]];
+
+                    if (distance < current.TimeLeft - i)
+                    {
+                        potentialReleaseLeft += valvesLeft[i].Value * (current.TimeLeft - i - 1 - distance);
+                    }
+                    if (distance < current.ElephantTimeLeft - i)
+                    {
+                        potentialReleaseLeft += valvesLeft[i + 1].Value * (current.ElephantTimeLeft - i - 1 - elephantDistance);
+                    }
+                }
             }
-
-            //for (int i = 0; i < valvesLeft.Count / 2; i += 2)
-            //{
-            //    var distance = distances[current.Nodes.Last().Node][valvesLeft[i]];
-            //    var elephantDistance = distances[current.ElephantNodes.Last().Node][valvesLeft[i]];
-
-            //    if (distance > elephantDistance && i + 1 < valvesLeft.Count)
-            //    {
-            //        distance = distances[current.Nodes.Last().Node][valvesLeft[i + 1]];
-
-            //        potentialReleaseLeft += valvesLeft[i + 1].Value * (current.TimeLeft - i - 1 - distance);
-            //        potentialReleaseLeft += valvesLeft[i].Value * (current.ElephantTimeLeft - i - 1 - elephantDistance);
-            //    }
-            //    else if (i + 1 < valvesLeft.Count)
-            //    {
-            //        elephantDistance = distances[current.ElephantNodes.Last().Node][valvesLeft[i + 1]];
-
-            //        potentialReleaseLeft += valvesLeft[i].Value * (current.TimeLeft - i - 1 - distance);
-            //        potentialReleaseLeft += valvesLeft[i + 1].Value * (current.ElephantTimeLeft - i - 1 - elephantDistance);
-            //    }
-
-            //}
-
-            //for (int i = 0; i < valvesLeft.Count; ++i)
-            //{
-            //    potentialReleaseLeft += valvesLeft[i].Value * (current.TimeLeft - 1 * i - distances[valvesLeft[i]].Values.Min());
-            //}
 
             if (potentialReleaseLeft < maxPressure)
             {
@@ -433,7 +433,7 @@ public partial class Day_16 : BaseDay
             {
                 maxPressure = current.TotalReleasePressure;
                 solutions.Add((current.TotalReleasePressure, current));
-                Console.WriteLine($"\t\tMax release pressure: {current.TotalReleasePressure}");
+                //Console.WriteLine($"\t\tMax release pressure: {current.TotalReleasePressure}");
             }
 
             var elephantChildren = current.ElephantExpand();
@@ -447,12 +447,12 @@ public partial class Day_16 : BaseDay
                 }
             }
 
-            if (++index % 1_000_000 == 0)
-            {
-                Console.WriteLine($"\tTime: {0.001 * sw.ElapsedMilliseconds:F3}");
-                Console.WriteLine($"\tIndex: {index}, stack: {stack.Count}, currentTimeLeft: {current.TimeLeft}");
-                Console.WriteLine($"\tCurrent release pressure: {current.TotalReleasePressure}");
-            }
+            //if (++index % 1_000_000 == 0)
+            //{
+            //    Console.WriteLine($"\tTime: {0.001 * sw.ElapsedMilliseconds:F3}");
+            //    Console.WriteLine($"\tIndex: {index}, stack: {stack.Count}, currentTimeLeft: {current.TimeLeft}");
+            //    Console.WriteLine($"\tCurrent release pressure: {current.TotalReleasePressure}");
+            //}
         }
 
         var result = solutions.OrderByDescending(pair => pair.TotalReleasedPressure).First().TotalReleasedPressure;
