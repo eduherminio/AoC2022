@@ -5,18 +5,21 @@ namespace AoC_2022;
 
 public partial class Day_16 : BaseDay
 {
-    public record Node : GenericNode<string>
+    public record Node : GenericNode<string>, IDijkstraNode<Node>
     {
         public int Value { get; set; }
 
-        public List<Node> Children { get; set; } = new List<Node>();
+        public IList<Node> Children { get; set; }
 
-        public Node(string id) : base(id) { }
+        public Node(string id) : base(id)
+        {
+            Children = new List<Node>();
+        }
 
-        public Node(string id, int value, IEnumerable<Node> children) : base(id)
+        public Node(string id, int value, IList<Node> children) : base(id)
         {
             Value = value;
-            Children.AddRange(children);
+            Children = children;
         }
     }
 
@@ -310,7 +313,7 @@ public partial class Day_16 : BaseDay
 
     public override ValueTask<string> Solve_2()
     {
-        Dictionary<Node, Dictionary<Node, int>> distances = new(_input.Select(valve => KeyValuePair.Create(valve, Dijkstra(_input, valve))));
+        Dictionary<Node, Dictionary<Node, int>> distances = new(_input.Select(valve => KeyValuePair.Create(valve, Helpers.Dijkstra(_input, valve))));
 
         var valvesThatReleasePressure = _input.Where(v => v.Value > 0).OrderByDescending(n => n.Value).ToList();
 
@@ -462,49 +465,6 @@ public partial class Day_16 : BaseDay
         return new($"{result}");
     }
 
-    private static Dictionary<Node, int> Dijkstra(List<Node> input, Node start, Node? end = null)
-    {
-        PriorityQueue<Node, int> priorityQueue = new(input.Count);
-        Dictionary<Node, Node?> previousNode = new(input.Count);
-        Dictionary<Node, int> distanceToSource = new(input.Count)
-        {
-            [start] = 0
-        };
-        const int maxDistance = 1_000_000_000;  // safe value that can be safely increased with node-neighbour distance
-
-        foreach (var point in input)
-        {
-            if (point != start)
-            {
-                distanceToSource[point] = maxDistance;
-                previousNode[point] = null;
-            }
-
-            priorityQueue.Enqueue(point, distanceToSource[point]);
-        }
-
-        while (priorityQueue.TryDequeue(out var node, out var priority))
-        {
-            foreach (var neighbour in node.Children)
-            {
-                var distance = priority + 1;    // Distance between source and node + distance between neighbourd and node
-                if (distance < distanceToSource[neighbour])
-                {
-                    distanceToSource[neighbour] = distance;
-                    priorityQueue.Enqueue(neighbour, distance);
-                    previousNode[neighbour] = node;
-
-                    if (neighbour == end)
-                    {
-                        return distanceToSource;
-                    }
-                }
-            }
-        }
-
-        return distanceToSource;
-    }
-
     private IEnumerable<Node> ParseInput()
     {
         Dictionary<string, Node> existingNodes = new();
@@ -520,12 +480,13 @@ public partial class Day_16 : BaseDay
                     }
 
                     return existingNodes[str] = new Node(str);
-                });
+                })
+                .ToList();
 
             if (existingNodes.TryGetValue(match.Groups[1].Value, out var existingNode))
             {
                 existingNode.Value = int.Parse(match.Groups[2].Value);
-                existingNode.Children = children.ToList();
+                existingNode.Children = children;
             }
             else
             {
