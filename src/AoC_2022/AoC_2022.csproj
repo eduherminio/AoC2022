@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AoCHelper" Version="2.0.2" />
+    <PackageReference Include="AoCHelper" Version="3.0.0" />
     <PackageReference Include="FileParser" Version="2.4.0" />
     <PackageReference Include="morelinq" Version="3.3.2" />
     <PackageReference Include="SheepTools" Version="0.13.0" />
